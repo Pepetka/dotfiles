@@ -1,0 +1,24 @@
+[general]
+import = [
+    # "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
+    "~/.config/alacritty/themes/themes/tomorrow_night_bright.toml"
+]
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+padding.x = 5
+padding.y = 20
+opacity = 0.75
+blur = true
+decorations = "None"
+startup_mode = "SimpleFullscreen"
+option_as_alt = "Both"
+
+[font]
+size = 14
+normal.family = "JetBrainsMono Nerd Font"
+
+[mouse]
+hide_when_typing = true
