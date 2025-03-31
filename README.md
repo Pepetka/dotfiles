@@ -21,7 +21,11 @@
 ~/.wezterm.lua
 ~/.tmux.conf
 ~/.oh-my-zsh/aliases/aliases.zsh
+~/.tmux/get_keyboard_layout_linux.sh
+~/.tmux/get_keyboard_layout_mac.sh
 ```
+
+Скрипты для определения раскладки клавиатуры (`get_keyboard_layout_linux.sh` и `get_keyboard_layout_mac.sh`) должны быть помещены в `~/.tmux/`, они используются в конфигурационном файле `tmux.conf`.
 
 ## Установка
 
@@ -36,6 +40,9 @@
    ln -s ~/dotfiles/aliases.zsh ~/.oh-my-zsh/aliases/aliases.zsh
    ln -s ~/dotfiles/tmux.conf ~/.tmux.conf
    ln -s ~/dotfiles/wezterm.lua ~/.wezterm.lua
+   mkdir -p ~/.tmux
+   ln -s ~/dotfiles/get_keyboard_layout_linux.sh ~/.tmux/get_keyboard_layout_linux.sh
+   ln -s ~/dotfiles/get_keyboard_layout_mac.sh ~/.tmux/get_keyboard_layout_mac.sh
    ```
 
 ## Дополнительно
