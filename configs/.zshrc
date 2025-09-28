@@ -22,9 +22,16 @@ plugins=(
 	z
 	git
 	fzf
+  nvm
+  npm
+  bun
+  sudo
+  docker
+  extract
 	alias-tips
 	autoupdate
   web-search
+  docker-compose
   git-auto-fetch
 	zsh-autosuggestions
 	zsh-syntax-highlighting
@@ -33,11 +40,34 @@ plugins=(
 source $ZSH/oh-my-zsh.sh
 source $ZSH/aliases/aliases.zsh
 
-if [[ $TERM != "screen" ]] && [[ $TERM != "screen-256color" ]]; then
-  if command -v tmux &> /dev/null; then
-    [ -z "$TMUX" ] && exec tmux
+# if [[ $TERM != "screen" ]] && [[ $TERM != "screen-256color" ]]; then
+#   if command -v tmux &> /dev/null; then
+#     [ -z "$TMUX" ] && exec tmux
+#   fi
+# fi
+
+autoload -Uz compinit
+compinit
+WORDCHARS=${WORDCHARS//:/}
+
+function _scripts_completion() {
+  local prev_word
+  prev_word=${words[2]}
+
+  # Срабатываем только если это 'run' или 'run-script'
+  if [[ "$prev_word" != "run" && "$prev_word" != "run-script" ]]; then
+    return 1
   fi
-fi
+
+  # Собираем список скриптов
+  if [[ -f package.json ]]; then
+    local scripts
+    scripts=($(jq -r '.scripts | keys[]' package.json 2>/dev/null))
+    compadd -a scripts
+  fi
+}
+
+compdef _scripts_completion pnpm
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

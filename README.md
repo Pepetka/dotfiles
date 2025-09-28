@@ -1,57 +1,105 @@
 # Dotfiles
 
-Этот репозиторий содержит конфигурационные файлы (dotfiles) для настройки окружения.
+This repository contains configuration files (dotfiles) for setting up a development environment.
 
-## Список файлов
+## Configuration Files
 
-- `.zshrc` — основной конфиг для Zsh.
-- `alacritty.toml` — конфигурация для Alacritty.
-- `aliases.zsh` — пользовательские алиасы для Zsh.
-- `get_keyboard_layout_linux.sh` — скрипт для определения текущей раскладки клавиатуры в Linux.
-- `get_keyboard_layout_mac.sh` — скрипт для определения текущей раскладки клавиатуры в macOS.
-- `tmux.conf` — конфигурация для Tmux.
-- `wezterm.lua` — конфигурация для WezTerm.
+### Terminal & Shell
+- **`.zshrc`** — Main Zsh configuration with Oh My Zsh, plugins, and custom settings
+- **`aliases.zsh`** — Custom aliases and functions for shell productivity
+- **`alacritty.toml`** — Alacritty terminal emulator configuration
+- **`wezterm.lua`** — WezTerm terminal emulator configuration
 
-## Пути установки
+### Terminal Multiplexers
+- **`tmux.conf`** — Tmux configuration with custom keybindings and plugins
+- **`zellij/`** — Zellij terminal multiplexer configuration and layouts
+  - `config.kdl` — Main Zellij configuration
+  - `layouts/` — Custom layouts
+  - `plugins/` — Custom plugins
+  - `shell/` — Shell scripts for status bar (CPU, memory, network, etc.)
 
-Для корректной работы файлы должны находиться в следующих местах:
+## Installation Paths
+
+Files should be placed in the following locations:
 
 ```
+~/.zshrc
 ~/.config/alacritty/alacritty.toml
 ~/.wezterm.lua
 ~/.tmux.conf
 ~/.oh-my-zsh/aliases/aliases.zsh
-~/.tmux/get_keyboard_layout_linux.sh
-~/.tmux/get_keyboard_layout_mac.sh
+~/.config/zellij/
 ```
 
-Скрипты для определения раскладки клавиатуры (`get_keyboard_layout_linux.sh` и `get_keyboard_layout_mac.sh`) должны быть помещены в `~/.tmux/`, они используются в конфигурационном файле `tmux.conf`.
+## Installation
 
-## Установка
-
-1. Клонируй репозиторий:
+1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/dotfiles.git ~/dotfiles
    ```
-2. Создай символические ссылки на файлы:
+
+2. Create necessary directories:
    ```bash
-   ln -s ~/dotfiles/.zshrc ~/.zshrc
-   ln -s ~/dotfiles/alacritty.toml ~/.config/alacritty/alacritty.toml
-   ln -s ~/dotfiles/aliases.zsh ~/.oh-my-zsh/aliases/aliases.zsh
-   ln -s ~/dotfiles/tmux.conf ~/.tmux.conf
-   ln -s ~/dotfiles/wezterm.lua ~/.wezterm.lua
-   mkdir -p ~/.tmux
-   ln -s ~/dotfiles/get_keyboard_layout_linux.sh ~/.tmux/get_keyboard_layout_linux.sh
-   ln -s ~/dotfiles/get_keyboard_layout_mac.sh ~/.tmux/get_keyboard_layout_mac.sh
+   mkdir -p ~/.config/alacritty
+   mkdir -p ~/.config/zellij
+   mkdir -p ~/.oh-my-zsh/aliases
    ```
 
-## Дополнительно
+3. Create symbolic links:
+   ```bash
+   # Zsh configuration
+   ln -sf ~/dotfiles/configs/.zshrc ~/.zshrc
+   ln -sf ~/dotfiles/configs/aliases.zsh ~/.oh-my-zsh/aliases/aliases.zsh
 
-- Для работы `.zshrc` может потребоваться [Oh My Zsh](https://ohmyz.sh/).
-- Для `tmux.conf` рекомендуется [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm).
-- Для `wezterm.lua` требуется [WezTerm](https://wezfurlong.org/wezterm/).
+   # Terminal emulators
+   ln -sf ~/dotfiles/configs/alacritty.toml ~/.config/alacritty/alacritty.toml
+   ln -sf ~/dotfiles/configs/wezterm.lua ~/.wezterm.lua
 
-## Лицензия
+   # Terminal multiplexers
+   ln -sf ~/dotfiles/configs/tmux.conf ~/.tmux.conf
+   ln -sf ~/dotfiles/configs/zellij ~/.config/zellij
+   ```
 
-Этот репозиторий распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для деталей.
+## Prerequisites
+
+### Required
+- **[Oh My Zsh](https://ohmyz.sh/)** — Framework for Zsh configuration
+- **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — Zsh theme (referenced in .zshrc)
+
+### Optional Terminal Emulators
+- **[Alacritty](https://alacritty.org/)** — Fast, cross-platform terminal emulator
+- **[WezTerm](https://wezfurlong.org/wezterm/)** — GPU-accelerated terminal emulator
+
+### Optional Terminal Multiplexers
+- **[Tmux](https://github.com/tmux/tmux)** — Terminal multiplexer
+- **[Tmux Plugin Manager](https://github.com/tmux-plugins/tpm)** — Plugin manager for Tmux
+- **[Zellij](https://zellij.dev/)** — Modern terminal multiplexer
+
+### Zsh Plugins (installed via Oh My Zsh)
+The .zshrc includes several plugins that enhance the shell experience:
+- `zsh-autosuggestions` — Command suggestions
+- `zsh-syntax-highlighting` — Syntax highlighting
+- `fzf` — Fuzzy finder integration
+- `git` — Git aliases and functions
+- `nvm` — Node Version Manager integration
+- And more (see .zshrc for full list)
+
+## Features
+
+### Aliases & Functions
+The configuration includes numerous aliases for:
+- Git operations (`gs`, `ga`, `gc`, etc.)
+- Navigation (`ls` with eza, directory shortcuts)
+- Development tools (npm, docker, etc.)
+- Text editing shortcuts
+
+### Custom Functions
+- `yy()` — Yazi file manager integration
+- `gcom()` — Smart git checkout main/master
+- `curl()` — Proxy handling for specific domains
+- `hurl_pretty()` — Pretty-printed HTTP responses
+
+## License
+
+This repository is distributed under the MIT License. See the [LICENSE](LICENSE) file for details.
 

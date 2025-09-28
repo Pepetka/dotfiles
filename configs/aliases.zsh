@@ -47,6 +47,11 @@ alias gf="git fetch"
 alias got="git"
 alias get="git"
 
+unalias gcom 2>/dev/null
+function gcom() {
+  git checkout master 2>/dev/null || git checkout main
+}
+
 alias nvmc="nvm current"
 alias nvml="nvm list"
 
