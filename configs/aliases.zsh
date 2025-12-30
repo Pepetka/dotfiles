@@ -11,6 +11,7 @@ alias alacritty.conf="nvim ~/.config/alacritty/alacritty.toml"
 alias wezterm.conf="nvim ~/.wezterm.lua"
 alias tmux.conf="nvim ~/.tmux.conf"
 alias aliases="nvim $ZSH/aliases/aliases.zsh"
+alias zshenv="nvim $ZSH/zshenv/zshenv.zsh"
 
 alias ls="eza --tree --level=1 --icons=always --no-time --no-user --no-permissions -a"
 alias ls2="eza --tree --level=2 --icons=always --no-time --no-user --no-permissions -a"

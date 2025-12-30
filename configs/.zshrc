@@ -39,12 +39,7 @@ plugins=(
 
 source $ZSH/oh-my-zsh.sh
 source $ZSH/aliases/aliases.zsh
-
-# if [[ $TERM != "screen" ]] && [[ $TERM != "screen-256color" ]]; then
-#   if command -v tmux &> /dev/null; then
-#     [ -z "$TMUX" ] && exec tmux
-#   fi
-# fi
+source $ZSH/zshenv/zshenv.zsh
 
 autoload -Uz compinit
 compinit
@@ -82,3 +77,7 @@ export NVM_DIR="$HOME/.nvm"
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
