@@ -1,7 +1,8 @@
 alias e="exit"
 alias cls="clear"
 
-alias v="nvim"
+alias v="$NVIM/11.7/bin/nvim"
+alias vv="NVIM_APPNAME=nvim-new nvim"
 
 alias zsho="nvim ~/.zshrc"
 alias zshr="source ~/.zshrc"
@@ -19,6 +20,7 @@ alias ls2="eza --tree --level=2 --icons=always --no-time --no-user --no-permissi
 alias gs="git status"
 alias ga="git add"
 alias gaa="git add ."
+alias gas="git add ./src"
 alias gpl="git pull"
 alias gpld="git pull develop"
 alias gplm="git pull master"
@@ -31,8 +33,7 @@ alias gcod="git checkout develop"
 alias gcom="git checkout master"
 alias gb="git branch"
 alias gm="git merge"
-alias gh="git log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short"
-alias gha="git log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short --all"
+alias gha="git log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short"
 alias gst="git stash"
 alias gstl="git stash list"
 alias gsta="git stash apply"
@@ -47,6 +48,41 @@ alias gcf="git clean -fd"
 alias gf="git fetch"
 alias got="git"
 alias get="git"
+
+alias renum="tmux move-window -r"
+
+alias deepseek='export ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic \
+  export ANTHROPIC_AUTH_TOKEN=$DEEPSEEK_API_KEY \
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL=deepseek-chat \
+  export ANTHROPIC_DEFAULT_SONNET_MODEL=deepseek-chat \
+  export ANTHROPIC_DEFAULT_OPUS_MODEL=deepseek-reasoner \
+  export API_TIMEOUT_MS=300000 \
+  export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 && claude'
+
+alias zai='export ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic \
+  export ANTHROPIC_AUTH_TOKEN=$Z_AI_API_KEY \
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-4.7 \
+  export ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5 \
+  export ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.1 \
+  export API_TIMEOUT_MS=300000 \
+  export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 && claude'
+
+alias minimax='export ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic \
+  export ANTHROPIC_AUTH_TOKEN=$MINIMAX_API_KEY \
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL=MiniMax-M2.7 \
+  export ANTHROPIC_DEFAULT_SONNET_MODEL=MiniMax-M2.7 \
+  export ANTHROPIC_DEFAULT_OPUS_MODEL=MiniMax-M3 \
+  export API_TIMEOUT_MS=3000000 \
+  export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 && claude'
+
+alias kimic='export ANTHROPIC_BASE_URL=https://api.kimi.com/coding \
+  export ANTHROPIC_AUTH_TOKEN=$KIMI_API_KEY \
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL=kimi-k2.5 \
+  export ANTHROPIC_DEFAULT_SONNET_MODEL=kimi-k2.5 \
+  export ANTHROPIC_DEFAULT_OPUS_MODEL=K2.6 \
+  export ENABLE_TOOL_SEARCH=false \
+  export API_TIMEOUT_MS=300000 \
+  export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 && claude'
 
 unalias gcom 2>/dev/null
 function gcom() {
@@ -71,15 +107,4 @@ function hurl_pretty() {
     else
         hurl api.hurl | jq | bat --language=json
     fi
-}
-
-function curl() {
-  domain=$(echo "$*" | awk -F'[/:]' '{print $4}')
-  domain=$(echo "$domain" | tr -d '\r\n ')
-
-  if [[ "$domain" == "api.openai.com" ]]; then
-    command curl --proxy socks5h://127.0.0.1:1086 "$@"
-  else
-    command curl "$@"
-  fi
 }

@@ -11,12 +11,10 @@ This repository contains configuration files (dotfiles) for setting up a develop
 - **`wezterm.lua`** — WezTerm terminal emulator configuration
 
 ### Terminal Multiplexers
-- **`tmux.conf`** — Tmux configuration with custom keybindings and plugins
-- **`zellij/`** — Zellij terminal multiplexer configuration and layouts
-  - `config.kdl` — Main Zellij configuration
-  - `layouts/` — Custom layouts
-  - `plugins/` — Custom plugins
-  - `shell/` — Shell scripts for status bar (CPU, memory, network, etc.)
+- **`tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, activity/bell notifications, and plugins
+
+### Shell Scripts
+- **`shell/keyboard.sh`** — macOS input source indicator used by the Tmux status bar (shows `RU`/`EN`/etc.)
 
 ## Screenshots
 
@@ -32,8 +30,8 @@ Files should be placed in the following locations:
 ~/.config/alacritty/alacritty.toml
 ~/.wezterm.lua
 ~/.tmux.conf
+~/.tmux/keyboard.sh
 ~/.oh-my-zsh/aliases/aliases.zsh
-~/.config/zellij/
 ```
 
 ## Installation
@@ -46,8 +44,8 @@ Files should be placed in the following locations:
 2. Create necessary directories:
    ```bash
    mkdir -p ~/.config/alacritty
-   mkdir -p ~/.config/zellij
    mkdir -p ~/.oh-my-zsh/aliases
+   mkdir -p ~/.tmux
    ```
 
 3. Create symbolic links:
@@ -60,10 +58,14 @@ Files should be placed in the following locations:
    ln -sf ~/dotfiles/configs/alacritty.toml ~/.config/alacritty/alacritty.toml
    ln -sf ~/dotfiles/configs/wezterm.lua ~/.wezterm.lua
 
-   # Terminal multiplexers
+   # Tmux
    ln -sf ~/dotfiles/configs/tmux.conf ~/.tmux.conf
-   ln -sf ~/dotfiles/configs/zellij ~/.config/zellij
+   ln -sf ~/dotfiles/shell/keyboard.sh ~/.tmux/keyboard.sh
    ```
+
+4. Install Tmux plugins:
+   - Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm)
+   - Open Tmux and press `prefix + I` to install plugins
 
 ## Prerequisites
 
@@ -79,7 +81,6 @@ Files should be placed in the following locations:
 ### Optional Terminal Multiplexers
 - **[Tmux](https://github.com/tmux/tmux)** — Terminal multiplexer
 - **[Tmux Plugin Manager](https://github.com/tmux-plugins/tpm)** — Plugin manager for Tmux
-- **[Zellij](https://zellij.dev/)** — Modern terminal multiplexer
 
 ### Zsh Plugins (installed via Oh My Zsh)
 The .zshrc includes several plugins that enhance the shell experience:
@@ -88,7 +89,7 @@ The .zshrc includes several plugins that enhance the shell experience:
 - `fzf` — Fuzzy finder integration
 - `git` — Git aliases and functions
 - `nvm` — Node Version Manager integration
-- And more (see .zshrc for full list)
+- `npm`, `bun`, `docker`, `direnv`, `extract`, `sudo`, and more (see `.zshrc` for full list)
 
 ## Features
 
@@ -102,7 +103,6 @@ The configuration includes numerous aliases for:
 ### Custom Functions
 - `yy()` — Yazi file manager integration
 - `gcom()` — Smart git checkout main/master
-- `curl()` — Proxy handling for specific domains
 - `hurl_pretty()` — Pretty-printed HTTP responses
 
 ## License

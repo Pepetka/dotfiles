@@ -3,9 +3,12 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 export ZSH="$HOME/.oh-my-zsh"
+export DOTFILES="$HOME/workspace/dotfiles"
 export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_FALLBACK_LIBRARY_PATH"
+export NVIM="$HOME/.config/nvim"
 
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
@@ -27,6 +30,7 @@ plugins=(
   bun
   sudo
   docker
+  direnv
   extract
 	alias-tips
 	autoupdate
@@ -81,3 +85,5 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+. "$HOME/.local/bin/env"
