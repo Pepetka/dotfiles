@@ -1,0 +1,26 @@
+theme = "TokyoNight Moon"
+
+term = xterm-256color
+
+window-padding-x = 0
+window-padding-y = 20,0
+window-padding-balance = false
+window-decoration = none
+window-save-state = never
+
+background-opacity = 0.85
+background-blur = true
+
+fullscreen = non-native
+macos-window-shadow = false
+macos-option-as-alt = true
+
+font-family = "JetBrainsMono Nerd Font"
+font-size = 15
+
+mouse-hide-while-typing = true
+
+keybind = shift+enter=text:\x1b[13;2u
+
+confirm-close-surface = false
+quit-after-last-window-closed = true

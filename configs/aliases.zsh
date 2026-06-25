@@ -1,22 +1,24 @@
+# Basics
 alias e="exit"
 alias cls="clear"
+alias v="nvim"
 
-alias v="$NVIM/11.7/bin/nvim"
-alias vv="NVIM_APPNAME=nvim-new nvim"
-
+# Configs
 alias zsho="nvim ~/.zshrc"
 alias zshr="source ~/.zshrc"
-
 alias ohmyzsh="nvim ~/.oh-my-zsh"
 alias alacritty.conf="nvim ~/.config/alacritty/alacritty.toml"
 alias wezterm.conf="nvim ~/.wezterm.lua"
+alias ghostty.conf="nvim ~/.config/ghostty/config"
 alias tmux.conf="nvim ~/.tmux.conf"
 alias aliases="nvim $ZSH/aliases/aliases.zsh"
 alias zshenv="nvim $ZSH/zshenv/zshenv.zsh"
 
+# Listing
 alias ls="eza --tree --level=1 --icons=always --no-time --no-user --no-permissions -a"
 alias ls2="eza --tree --level=2 --icons=always --no-time --no-user --no-permissions -a"
 
+# Git
 alias gs="git status"
 alias ga="git add"
 alias gaa="git add ."
@@ -30,7 +32,6 @@ alias gcf="git commit --amend --no-edit"
 alias gco="git checkout"
 alias gcob="git checkout -b"
 alias gcod="git checkout develop"
-alias gcom="git checkout master"
 alias gb="git branch"
 alias gm="git merge"
 alias gha="git log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short"
@@ -44,13 +45,20 @@ alias grest="git restore"
 alias grests="git restore --staged"
 alias greset="git reset --hard"
 alias greseth="git reset HEAD^"
-alias gcf="git clean -fd"
+alias gclean="git clean -fd"
 alias gf="git fetch"
 alias got="git"
 alias get="git"
 
+unalias gcom 2>/dev/null
+function gcom() {
+  git checkout master 2>/dev/null || git checkout main
+}
+
+# Tmux
 alias renum="tmux move-window -r"
 
+# AI providers
 alias deepseek='export ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic \
   export ANTHROPIC_AUTH_TOKEN=$DEEPSEEK_API_KEY \
   export ANTHROPIC_DEFAULT_HAIKU_MODEL=deepseek-chat \
@@ -84,27 +92,56 @@ alias kimic='export ANTHROPIC_BASE_URL=https://api.kimi.com/coding \
   export API_TIMEOUT_MS=300000 \
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 && claude'
 
-unalias gcom 2>/dev/null
-function gcom() {
-  git checkout master 2>/dev/null || git checkout main
-}
-
+# Node
 alias nvmc="nvm current"
 alias nvml="nvm list"
 
+# Functions
 function yy() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-	yazi "$@" --cwd-file="$tmp"
-	if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
+  local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+  yazi "$@" --cwd-file="$tmp"
+  if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+    cd -- "$cwd"
+  fi
+  rm -f -- "$tmp"
 }
 
 function hurl_pretty() {
-    if [[ -n "$1" ]]; then
-        hurl api.hurl | jq -r "$1" | jq | bat --language=json
-    else
-        hurl api.hurl | jq | bat --language=json
-    fi
+  if [[ -n "$1" ]]; then
+    hurl api.hurl | jq -r "$1" | jq | bat --language=json
+  else
+    hurl api.hurl | jq | bat --language=json
+  fi
+}
+
+function ts3() {
+  if [ -z "$TMUX" ]; then
+    echo "Error: not inside tmux" >&2
+    return 1
+  fi
+
+  local panes
+  panes=$(tmux display-message -p '#{window_panes}')
+
+  if [ "$panes" -ne 1 ]; then
+    echo "Current window already has $panes panes, skipping split" >&2
+    return 0
+  fi
+
+  local cmd1="${1:-nvim}"
+  local cmd2="${2:-}"
+  local cmd3="${3:-}"
+
+  local left
+  left=$(tmux display-message -p '#{pane_id}')
+  local top_right
+  top_right=$(tmux split-window -h -p 34 -P -F '#{pane_id}')
+  local bottom_right
+  bottom_right=$(tmux split-window -v -p 16 -P -F '#{pane_id}')
+
+  [ -n "$cmd1" ] && tmux send-keys -t "$left" "$cmd1" C-m
+  [ -n "$cmd2" ] && tmux send-keys -t "$top_right" "$cmd2" C-m
+  [ -n "$cmd3" ] && tmux send-keys -t "$bottom_right" "$cmd3" C-m
+
+  tmux select-pane -t "$bottom_right"
 }

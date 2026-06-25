@@ -4,11 +4,15 @@ fi
 
 export ZSH="$HOME/.oh-my-zsh"
 export DOTFILES="$HOME/workspace/dotfiles"
+
 export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_FALLBACK_LIBRARY_PATH"
+
 export NVIM="$HOME/.config/nvim"
+export NVIM_APPNAME="nvim-new"
 
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
@@ -21,10 +25,14 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 DISABLE_LS_COLORS="true"
 DISABLE_AUTO_TITLE="true"
 
+if [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+  export SNACKS_GHOSTTY=true
+fi
+
 plugins=(
-	z
-	git
-	fzf
+  z
+  git
+  fzf
   nvm
   npm
   bun
@@ -32,13 +40,13 @@ plugins=(
   docker
   direnv
   extract
-	alias-tips
-	autoupdate
+  alias-tips
+  autoupdate
   web-search
   docker-compose
   git-auto-fetch
-	zsh-autosuggestions
-	zsh-syntax-highlighting
+  zsh-autosuggestions
+  zsh-syntax-highlighting
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -50,15 +58,12 @@ compinit
 WORDCHARS=${WORDCHARS//:/}
 
 function _scripts_completion() {
-  local prev_word
-  prev_word=${words[2]}
+  local prev_word=${words[2]}
 
-  # Срабатываем только если это 'run' или 'run-script'
   if [[ "$prev_word" != "run" && "$prev_word" != "run-script" ]]; then
     return 1
   fi
 
-  # Собираем список скриптов
   if [[ -f package.json ]]; then
     local scripts
     scripts=($(jq -r '.scripts | keys[]' package.json 2>/dev/null))
@@ -68,22 +73,21 @@ function _scripts_completion() {
 
 compdef _scripts_completion pnpm
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-# bun completions
-[ -s "/Users/vlvkuznetsov/.bun/_bun" ] && source "/Users/vlvkuznetsov/.bun/_bun"
-
-# bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+[ -s "/Users/vlvkuznetsov/.bun/_bun" ] && source "/Users/vlvkuznetsov/.bun/_bun"
 
 . "$HOME/.local/bin/env"
+
+export PATH="/Users/vlvkuznetsov/.kimi-code/bin:$PATH"
+
+# SDKMAN must stay at the end of the file.
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"

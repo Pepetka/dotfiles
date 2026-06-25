@@ -1,7 +1,6 @@
 [general]
 import = [
-    # "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
-    "~/.config/alacritty/themes/themes/tomorrow_night_bright.toml"
+    "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
 ]
 
 [env]
@@ -28,5 +27,5 @@ hide_when_typing = true
 
 [keyboard]
 bindings = [
-  { key = "Return", mods = "Shift", chars = "\u001b\r"}
+  { key = "Return", mods = "Shift", chars = "\u001b[13;2u" }
 ]
