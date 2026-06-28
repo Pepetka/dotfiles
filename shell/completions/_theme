@@ -1,0 +1,11 @@
+#compdef theme
+
+local -a subcmds
+subcmds=(
+  'dark:Set dark theme (TokyoNight Moon)'
+  'light:Set light theme (TokyoNight Day)'
+  'toggle:Toggle between dark and light'
+  'status:Show current theme mode'
+)
+
+_describe -t commands 'theme' subcmds

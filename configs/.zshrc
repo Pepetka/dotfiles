@@ -5,14 +5,14 @@ fi
 export ZSH="$HOME/.oh-my-zsh"
 export DOTFILES="$HOME/workspace/dotfiles"
 
+# Add custom completions
+fpath+=("$DOTFILES/shell/completions")
+
 export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_FALLBACK_LIBRARY_PATH"
-
-export NVIM="$HOME/.config/nvim"
-export NVIM_APPNAME="nvim-new"
 
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
@@ -25,9 +25,9 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 DISABLE_LS_COLORS="true"
 DISABLE_AUTO_TITLE="true"
 
-if [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
-  export SNACKS_GHOSTTY=true
-fi
+# if [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+#   export SNACKS_GHOSTTY=true
+# fi
 
 plugins=(
   z
@@ -50,8 +50,10 @@ plugins=(
 )
 
 source $ZSH/oh-my-zsh.sh
-source $ZSH/aliases/aliases.zsh
-source $ZSH/zshenv/zshenv.zsh
+source $DOTFILES/configs/aliases.zsh
+
+# Private API keys and secrets. Keep this file out of dotfiles / git.
+[[ ! -f ~/.config/zsh/secrets.zsh ]] || source ~/.config/zsh/secrets.zsh
 
 autoload -Uz compinit
 compinit
@@ -74,6 +76,20 @@ function _scripts_completion() {
 compdef _scripts_completion pnpm
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# Auto-reload p10k when the ~/.p10k.zsh symlink target changes.
+autoload -Uz add-zsh-hook
+_p10k_config_target() { readlink ~/.p10k.zsh 2>/dev/null || echo ""; }
+_p10k_last_target="$(_p10k_config_target)"
+_p10k_check_reload() {
+  local current="$(_p10k_config_target)"
+  if [[ "$current" != "$_p10k_last_target" ]]; then
+    _p10k_last_target="$current"
+    [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+    (($+functions[p10k])) && p10k reload 2>/dev/null
+  fi
+}
+add-zsh-hook precmd _p10k_check_reload
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
