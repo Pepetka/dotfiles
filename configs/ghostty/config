@@ -1,6 +1,4 @@
-theme = "TokyoNight Moon"
-
-term = xterm-256color
+config-file = "~/.config/theme/ghostty-theme.conf"
 
 window-padding-x = 0
 window-padding-y = 20,0
@@ -17,10 +15,47 @@ macos-option-as-alt = true
 
 font-family = "JetBrainsMono Nerd Font"
 font-size = 15
+font-thicken = true
+font-feature = calt
+font-feature = liga
+font-feature = zero
+
+cursor-style = block
+cursor-style-blink = false
+cursor-color = #7aa2f7
 
 mouse-hide-while-typing = true
 
+clipboard-read = allow
+clipboard-write = allow
+copy-on-select = false
+right-click-action = ignore
+clipboard-paste-protection = false
+
+shell-integration = detect
+shell-integration-features = no-cursor,no-sudo,title,path
+
 keybind = shift+enter=text:\x1b[13;2u
+
+keybind = super+d=unbind
+keybind = super+shift+d=unbind
+keybind = super+shift+enter=unbind
+keybind = super+alt+arrow_up=unbind
+keybind = super+alt+arrow_down=unbind
+keybind = super+alt+arrow_left=unbind
+keybind = super+alt+arrow_right=unbind
+keybind = super+ctrl+arrow_up=unbind
+keybind = super+ctrl+arrow_down=unbind
+keybind = super+ctrl+arrow_left=unbind
+keybind = super+ctrl+arrow_right=unbind
+keybind = super+ctrl+==unbind
+keybind = ctrl+tab=unbind
+keybind = ctrl+shift+tab=unbind
+
+keybind = global:ctrl+`=toggle_quick_terminal
+quick-terminal-position = center
+quick-terminal-size = 80%,50%
+quick-terminal-autohide = true
 
 confirm-close-surface = false
 quit-after-last-window-closed = true

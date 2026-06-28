@@ -11,8 +11,17 @@ alias alacritty.conf="nvim ~/.config/alacritty/alacritty.toml"
 alias wezterm.conf="nvim ~/.wezterm.lua"
 alias ghostty.conf="nvim ~/.config/ghostty/config"
 alias tmux.conf="nvim ~/.tmux.conf"
-alias aliases="nvim $ZSH/aliases/aliases.zsh"
+alias aliases="nvim $DOTFILES/configs/aliases.zsh"
 alias zshenv="nvim $ZSH/zshenv/zshenv.zsh"
+
+unalias theme 2>/dev/null
+theme() {
+  "$DOTFILES/shell/theme-switch.sh" "$@"
+  [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+  (($+functions[p10k])) && p10k reload 2>/dev/null
+  (($+functions[_p9k_precmd])) && _p9k_precmd 2>/dev/null
+  [[ -o zle ]] && zle .reset-prompt 2>/dev/null
+}
 
 # Listing
 alias ls="eza --tree --level=1 --icons=always --no-time --no-user --no-permissions -a"

@@ -1,15 +1,12 @@
 [general]
 import = [
-    "~/.config/alacritty/themes/themes/catppuccin_mocha.toml"
+    "~/.config/theme/alacritty-theme.toml"
 ]
-
-[env]
-TERM = "xterm-256color"
 
 [window]
 padding.x = 0
 padding.y = 20
-opacity = 0.75
+opacity = 0.85
 blur = true
 decorations = "None"
 startup_mode = "SimpleFullscreen"
@@ -25,7 +22,17 @@ bold_italic = { family = "JetBrainsMono Nerd Font", style = "Bold Italic" }
 [mouse]
 hide_when_typing = true
 
+[cursor]
+style = { shape = "Block", blinking = "Never" }
+
+[colors.cursor]
+text = "CellBackground"
+cursor = "#7aa2f7"
+
+[selection]
+save_to_clipboard = false
+
 [keyboard]
 bindings = [
-  { key = "Return", mods = "Shift", chars = "\u001b[13;2u" }
+  { key = "Return", mods = "Shift", chars = "\x1b[13;2u" }
 ]
