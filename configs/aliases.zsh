@@ -4,15 +4,15 @@ alias cls="clear"
 alias v="nvim"
 
 # Configs
-alias zsho="nvim ~/.zshrc"
-alias zshr="source ~/.zshrc"
-alias ohmyzsh="nvim ~/.oh-my-zsh"
-alias alacritty.conf="nvim ~/.config/alacritty/alacritty.toml"
-alias wezterm.conf="nvim ~/.wezterm.lua"
-alias ghostty.conf="nvim ~/.config/ghostty/config"
+alias zsho='nvim "${ZDOTDIR:-$HOME}/.zshrc"'
+alias zshr='source "${ZDOTDIR:-$HOME}/.zshrc"'
+alias ohmyzsh='nvim "${ZSH:-$HOME/.oh-my-zsh}"'
+alias alacritty.conf='nvim "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"'
+alias wezterm.conf='nvim "${WEZTERM_CONFIG_FILE:-$HOME/.wezterm.lua}"'
+alias ghostty.conf='nvim "${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"'
 alias tmux.conf="nvim ~/.tmux.conf"
-alias aliases="nvim $DOTFILES/configs/aliases.zsh"
-alias zshsecrets="nvim ~/.config/zsh/secrets.zsh"
+alias aliases='nvim "$DOTFILES/configs/aliases.zsh"'
+alias zshsecrets='nvim "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/secrets.zsh"'
 
 unalias theme 2>/dev/null
 theme() {

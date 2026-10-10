@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"dotfiles/theme/internal/engine"
 	"errors"
 	"os"
 	"os/exec"
@@ -9,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"dotfiles/theme/internal/engine"
 )
 
 func sourceRoot(t *testing.T) string {

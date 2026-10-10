@@ -152,12 +152,12 @@
     fi
     if ((VCS_STATUS_COMMITS_AHEAD || VCS_STATUS_COMMITS_BEHIND)); then
       ((VCS_STATUS_COMMITS_BEHIND)) && res+=" ${clean}⇣${VCS_STATUS_COMMITS_BEHIND}"
-      ((VCS_STATUS_COMMITS_AHEAD && !VCS_STATUS_COMMITS_BEHIND)) && res+=" "
+      ((VCS_STATUS_COMMITS_AHEAD && ! VCS_STATUS_COMMITS_BEHIND)) && res+=" "
       ((VCS_STATUS_COMMITS_AHEAD)) && res+="${clean}⇡${VCS_STATUS_COMMITS_AHEAD}"
     elif [[ -n $VCS_STATUS_REMOTE_BRANCH ]]; then
     fi
     ((VCS_STATUS_PUSH_COMMITS_BEHIND)) && res+=" ${clean}⇠${VCS_STATUS_PUSH_COMMITS_BEHIND}"
-    ((VCS_STATUS_PUSH_COMMITS_AHEAD && !VCS_STATUS_PUSH_COMMITS_BEHIND)) && res+=" "
+    ((VCS_STATUS_PUSH_COMMITS_AHEAD && ! VCS_STATUS_PUSH_COMMITS_BEHIND)) && res+=" "
     ((VCS_STATUS_PUSH_COMMITS_AHEAD)) && res+="${clean}⇢${VCS_STATUS_PUSH_COMMITS_AHEAD}"
     ((VCS_STATUS_STASHES)) && res+=" ${clean}*${VCS_STATUS_STASHES}"
     [[ -n $VCS_STATUS_ACTION ]] && res+=" ${conflicted}${VCS_STATUS_ACTION}"
@@ -299,7 +299,7 @@
   typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=always
   typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
   typeset -g POWERLEVEL9K_DISABLE_HOT_RELOAD=true
-  ((!$+functions[p10k])) || p10k reload
+  ((! $+functions[p10k])) || p10k reload
 }
 typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 ((${#p10k_config_opts})) && setopt ${p10k_config_opts[@]}

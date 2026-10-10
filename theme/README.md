@@ -17,8 +17,9 @@ theme status                  # service, policy, mode and per-adapter diagnostic
 theme uninstall               # stop service; keep preference and last palettes
 ```
 
-Installation needs Go >= 1.27, Apple Command Line Tools and Python 3. Go has no
-external dependencies. Reload existing terminal configurations once when
+Installation needs Go >= 1.27 and Apple Command Line Tools. Go has no
+external dependencies; neither installation nor tests require Python.
+Reload existing terminal configurations once when
 migrating from independent appearance selection. Existing Neovim instances
 already observing `mode` need no migration. Reinstall after moving dotfiles or
 changing the config root. The original shell command and resource paths remain
@@ -37,17 +38,23 @@ and application reloads. `backends/macos` only observes the system. The separate
 `platform/macos` helper handles Ghostty Automation; it is not an appearance backend.
 `resources` owns the existing Moon/Day palettes and prompt configurations.
 
+`cmd/theme-install` and `internal/install` build the binaries, generate JSON and
+LaunchAgent XML, validate the candidate in isolation and restore the previous
+service if installation fails. `install.sh` only invokes the Go installer.
+Native macOS tools compile Swift, preserve signed bundle metadata and manage
+the LaunchAgent. The helper fingerprint is compatible with earlier installs.
+
 Runtime files:
 
-| File                 | Meaning                                                               |
-| -------------------- | --------------------------------------------------------------------- |
-| `engine.json`        | Installed source root, backend and platform helper paths, tmux socket |
-| `preference`         | Persistent `auto`, `dark` or `light` selection                        |
-| `mode`               | Effective `dark` or `light`; stable contract with Neovim              |
-| `*-theme.*`          | Generated application-specific configuration                          |
-| `wezterm-bridge.lua` | Installed bridge to the generated WezTerm theme                       |
-| `status.json`        | Last reconciliation, backend error and independent adapter results; status validates current policy/mode files    |
-| `service.log`        | Transitions into/out of synchronization failure                       |
+| File                 | Meaning                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `engine.json`        | Installed source root, backend and platform helper paths, tmux socket                                          |
+| `preference`         | Persistent `auto`, `dark` or `light` selection                                                                 |
+| `mode`               | Effective `dark` or `light`; stable contract with Neovim                                                       |
+| `*-theme.*`          | Generated application-specific configuration                                                                   |
+| `wezterm-bridge.lua` | Installed bridge to the generated WezTerm theme                                                                |
+| `status.json`        | Last reconciliation, backend error and independent adapter results; status validates current policy/mode files |
+| `service.log`        | Transitions into/out of synchronization failure                                                                |
 
 CLI and daemon use the same file lock and reread preference under that lock.
 Outputs are replaced atomically; unchanged content is not rewritten. Legacy
@@ -115,6 +122,32 @@ Ghostty requires 1.3+ and Automation permission for **Theme Automation**. Keep
 is denied, status explains the error and other adapters continue. Reinstallation reuses the signed helper when its source and metadata are unchanged, preserving
 its Automation identity. A source change requiring a helper rebuild may require renewed
 permission according to macOS code-signing/TCC policy.
+
+## CLI utilities
+
+Hunk and Codex provide manual **Tokyo Night Moon** (dark) and **Tokyo Night Day**
+(light) variants using the installed Neovim TokyoNight palettes. Neither the
+engine nor a background process changes their theme selection.
+
+Hunk loads both themes from `configs/hunk/config.toml`. Link this self-contained
+configuration to `${XDG_CONFIG_HOME:-~/.config}/hunk/config.toml` to share themes
+and keybindings. Transparency remains enabled. Press `t` to choose a theme;
+an existing session may need one reopen to discover changes to the theme catalog.
+Subsequent selections apply immediately. Hunk uses a bundled foreground for
+unhighlighted files, independently of custom syntax scope overrides.
+
+For Codex, link `resources/codex/Tokyo Night Moon.tmTheme` and
+`resources/codex/Tokyo Night Day.tmTheme` into `$CODEX_HOME/themes`
+(default `~/.codex/themes`), or use the [Codex installer](../configs/codex/README.md)
+to install themes together with shared settings and profiles. Choose a theme with
+`/theme`. Neutral text and ordinary code backgrounds inherit the terminal colors.
+Added and removed diff lines use subtle green and red backgrounds matched to
+each variant. Codex persists your selection to
+`[tui].theme` in `$CODEX_HOME/config.toml`; preserve other existing settings.
+Codex 0.162 still owns and caches some UI colors independently of syntax themes.
+No Codex adapter or client rebuild is needed.
+
+Choose Day on a light terminal background and Moon on a dark one.
 
 ## Verification
 

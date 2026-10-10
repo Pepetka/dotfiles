@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"dotfiles/theme/internal/adapters"
+	"dotfiles/theme/internal/engine"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,9 +11,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-
-	"dotfiles/theme/internal/adapters"
-	"dotfiles/theme/internal/engine"
 )
 
 func execute(args []string) error {

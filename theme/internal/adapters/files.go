@@ -2,10 +2,9 @@ package adapters
 
 import (
 	"context"
+	"dotfiles/theme/internal/engine"
 	"fmt"
 	"os"
-
-	"dotfiles/theme/internal/engine"
 )
 
 type Palette struct{ Application, Extension string }
@@ -52,6 +51,7 @@ func (WezTerm) Name() string { return "wezterm" }
 func (WezTerm) Render(_ engine.Config, mode engine.Mode) ([]engine.Artifact, error) {
 	return []engine.Artifact{{Name: "wezterm-theme.lua", Data: []byte("return { color_scheme = \"tokyonight_" + style(mode) + "\" }\n")}}, nil
 }
+
 func (WezTerm) Apply(_ context.Context, _ engine.Config, r engine.ApplyRequest) (engine.AdapterState, error) {
 	return engine.AdapterState{State: "published", Mode: r.Mode}, nil
 }

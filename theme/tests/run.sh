@@ -5,7 +5,7 @@ root_directory="$(dirname "$source_directory")"
 test_directory="$(mktemp -d "${TMPDIR:-/tmp}/theme-tests.XXXXXX")"
 trap 'rm -rf "$test_directory"' EXIT
 export GOCACHE="${GOCACHE:-$test_directory/go-cache}"
-(cd "$source_directory" && go test -race ./... && go vet ./... && GOOS=linux GOARCH=amd64 go build -o "$test_directory/theme-linux" ./cmd/theme)
+(cd "$source_directory" && go test -race ./... && go vet ./... && GOOS=linux GOARCH=amd64 go build -o "$test_directory/theme-linux" ./cmd/theme && GOOS=linux GOARCH=amd64 go build -o "$test_directory/install-linux" ./cmd/theme-install)
 for script in "$source_directory/theme" "$source_directory/install.sh" "$source_directory/tests/"*.sh "$root_directory/shell/theme-switch.sh" "$root_directory/shell/tests/theme-sync.sh"; do
   bash -n "$script"
 done

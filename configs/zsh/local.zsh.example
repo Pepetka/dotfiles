@@ -1,0 +1,12 @@
+# Optional device-specific settings. Copy to ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh.
+# This file loads before tool discovery, Oh My Zsh and plugins.
+# Keep the real local.zsh outside the repository.
+
+# export ZSH="$HOME/tools/oh-my-zsh"
+# export ZSH_CUSTOM="$ZSH/custom"
+# export HOMEBREW_PREFIX="$HOME/tools/homebrew"
+# export NVM_DIR="$HOME/tools/nvm"
+# export BUN_INSTALL="$HOME/tools/bun"
+# export KIMI_CODE_HOME="$HOME/tools/kimi-code"
+# export SDKMAN_DIR="$HOME/tools/sdkman"
+# path=("$HOME/tools/bin" $path)

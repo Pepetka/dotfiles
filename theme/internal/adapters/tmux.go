@@ -2,13 +2,12 @@ package adapters
 
 import (
 	"context"
+	"dotfiles/theme/internal/engine"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
-
-	"dotfiles/theme/internal/engine"
 )
 
 type Tmux struct{}

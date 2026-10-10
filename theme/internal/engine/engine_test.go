@@ -33,6 +33,7 @@ func (a *fakeAdapter) Name() string { return a.name }
 func (a *fakeAdapter) Render(_ Config, mode Mode) ([]Artifact, error) {
 	return []Artifact{{Name: a.name + ".conf", Data: []byte(mode)}}, a.renderErr
 }
+
 func (a *fakeAdapter) Apply(_ context.Context, _ Config, r ApplyRequest) (AdapterState, error) {
 	a.applyCount++
 	if r.Changed || r.Force || r.Previous.Mode != r.Mode || r.Previous.State == "error" {

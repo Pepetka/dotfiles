@@ -1,0 +1,22 @@
+# Portable preferences. Local trust, onboarding state and machine MCPs stay local.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "xhigh"
+approvals_reviewer = "auto_review"
+
+[features]
+memories = true
+
+[tui]
+# Initial choice only: installation preserves subsequent manual theme selection.
+theme = "Tokyo Night Moon"
+status_line = ["model-with-reasoning", "context-used", "five-hour-limit", "weekly-limit"]
+vim_mode_default = true
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+bearer_token_env_var = "CONTEXT7_API_KEY"

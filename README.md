@@ -10,7 +10,8 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 - **`.zshrc`** — Main Zsh configuration with Oh My Zsh, Powerlevel10k, plugins, and environment settings
 - **`aliases.zsh`** — Custom aliases, functions, and the `theme` command
-- **`zsh/secrets.zsh.example`** — Example file for private API keys and secrets; copy to `~/.config/zsh/secrets.zsh`
+- **`zsh/secrets.zsh.example`** — Example file for private API keys and secrets
+- **`zsh/local.zsh.example`** — Optional device-specific tool paths and settings
 - **`alacritty.toml`** — Alacritty terminal emulator configuration
 - **`theme/resources/alacritty/`** — Alacritty dark/light palettes (old paths are compatibility links)
 - **`wezterm.lua`** — WezTerm terminal emulator configuration
@@ -37,6 +38,11 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 - **[nvim-config](https://github.com/Pepetka/nvim-config)** — Matching Neovim configuration with native LSP,
   fzf-lua, and TokyoNight theme switching
 
+### AI CLI
+
+- **[configs/codex/](configs/codex/README.md)** — Portable Codex preferences, work/deep/review profiles,
+  and a three-way installer that preserves local state and manual theme selection
+
 ## Screenshots
 
 ### Terminal — TokyoNight Moon (dark)
@@ -54,7 +60,7 @@ It supports persistent manual overrides and automatic macOS appearance tracking.
 All theme sources, application adapters, palettes, tests and installation logic live in [theme/](theme/README.md).
 
 ```bash
-theme install    # requires Go >= 1.27, Apple Command Line Tools and Python 3
+theme install    # requires Go >= 1.27 and Apple Command Line Tools
 theme authorize  # with Ghostty open: allow Theme Automation to reload its config
 theme auto       # follow the system (default)
 theme dark       # persistent manual dark mode
@@ -84,6 +90,7 @@ Files should be placed/symlinked in the following locations:
 ~/.p10k.zsh
 ~/.config/alacritty/alacritty.toml
 ~/.config/ghostty/config
+~/.config/hunk/config.toml
 ~/.config/theme/
 ~/.config/zsh/secrets.zsh
 ~/.wezterm.lua
@@ -96,38 +103,46 @@ Files should be placed/symlinked in the following locations:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/Pepetka/dotfiles.git ~/workspace/dotfiles
+   git clone https://github.com/Pepetka/dotfiles.git "$HOME/dotfiles"
+   export DOTFILES="$HOME/dotfiles" # Use your actual checkout location.
    ```
 
 2. Create necessary directories:
 
    ```bash
-   mkdir -p ~/.config/alacritty
-   mkdir -p ~/.config/ghostty
-   mkdir -p ~/.config/theme
-   mkdir -p ~/.config/zsh
-   mkdir -p ~/.tmux
+   config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
+   mkdir -p "$config_root/alacritty" "$config_root/ghostty" "$config_root/hunk"
+   mkdir -p "$config_root/theme" "$config_root/zsh" "$HOME/.tmux"
+   mkdir -p "${ZDOTDIR:-$HOME}"
    ```
 
-3. Create symbolic links:
+3. Back up existing files, then create symbolic links for the applications you use:
 
    ```bash
    # Zsh configuration
-   ln -sf ~/workspace/dotfiles/configs/.zshrc ~/.zshrc
+   ln -s "$DOTFILES/configs/.zshrc" "${ZDOTDIR:-$HOME}/.zshrc"
 
    # Terminal emulators
-   ln -sf ~/workspace/dotfiles/configs/alacritty.toml ~/.config/alacritty/alacritty.toml
-   ln -sf ~/workspace/dotfiles/configs/ghostty/config ~/.config/ghostty/config
-   ln -sf ~/workspace/dotfiles/configs/wezterm.lua ~/.wezterm.lua
+   ln -s "$DOTFILES/configs/alacritty.toml" "$config_root/alacritty/alacritty.toml"
+   ln -s "$DOTFILES/configs/ghostty/config" "$config_root/ghostty/config"
+   ln -s "$DOTFILES/configs/hunk/config.toml" "$config_root/hunk/config.toml"
+   ln -s "$DOTFILES/configs/wezterm.lua" "$HOME/.wezterm.lua"
 
    # Tmux
-   ln -sf ~/workspace/dotfiles/configs/tmux.conf ~/.tmux.conf
-   ln -sf ~/workspace/dotfiles/shell/keyboard.sh ~/.tmux/keyboard.sh
+   ln -s "$DOTFILES/configs/tmux.conf" "$HOME/.tmux.conf"
+   ln -s "$DOTFILES/shell/keyboard.sh" "$HOME/.tmux/keyboard.sh"
    ```
 
    Aliases are sourced directly from `$DOTFILES/configs/aliases.zsh` in `.zshrc`, so no separate symlink is needed.
+   `.zshrc` derives `DOTFILES` from its symlink target; the checkout may live anywhere.
+   An explicitly exported `DOTFILES` takes precedence. Keep `XDG_CONFIG_HOME` consistent
+   between the shell, terminal applications and service installation when using a custom root.
 
-4. Run `theme install` on macOS to create theme state, link the ANSI p10k config and start the engine; then `theme authorize` with Ghostty open.
+4. Run `"$DOTFILES/theme/theme" install` on macOS to create theme state, link the ANSI p10k config and start the engine;
+   then `"$DOTFILES/theme/theme" authorize` with Ghostty open.
+
+   For Codex, run `sh "$DOTFILES/configs/codex/install.sh" --dry-run`, then `sh "$DOTFILES/configs/codex/install.sh"`.
+   See [Codex configuration](configs/codex/README.md) for update behavior and profiles.
 
 5. Install Tmux plugins:
    - Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm)
@@ -135,12 +150,30 @@ Files should be placed/symlinked in the following locations:
 
 ## Prerequisites
 
-### Required
+### Shell setup
 
-- **[Oh My Zsh](https://ohmyz.sh/)** — Framework for Zsh configuration
-- **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — Zsh theme
+- **Zsh** — Required for `.zshrc`; aliases and completion work without optional frameworks
+- **[Oh My Zsh](https://ohmyz.sh/)** — Optional framework for plugins
+- **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — Optional Zsh theme
   - `~/.p10k.zsh` points to the single ANSI config installed by `theme install`; do not run `p10k configure`
     unless you want to overwrite it
+
+Homebrew is discovered from `PATH`, `HOMEBREW_PREFIX` or standard installation
+locations. Its actual prefix supplies tool and library paths; missing Homebrew,
+Go, plugins and optional initialization scripts do not prevent shell startup.
+Only installed Oh My Zsh plugins are enabled. Path entries are deduplicated.
+
+For nonstandard paths, copy `configs/zsh/local.zsh.example` to
+`${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh` and adjust it on that device.
+It loads before tool/framework setup and supports `ZSH`, `ZSH_CUSTOM`,
+`HOMEBREW_PREFIX`, `NVM_DIR`, `BUN_INSTALL`, `KIMI_CODE_HOME` and `SDKMAN_DIR`.
+Keep API keys in `zsh/secrets.zsh` under the same config root, outside Git.
+Codex authentication, trusted projects and device-specific MCP configuration
+remain local and are preserved by its installer.
+
+The theme service and keyboard-layout indicator currently use macOS APIs;
+automatic Linux appearance tracking still needs a separate backend/service installer.
+Check shell portability with `bash shell/tests/portability.sh`.
 
 ### Optional Terminal Emulators
 
