@@ -12,15 +12,11 @@ alias wezterm.conf="nvim ~/.wezterm.lua"
 alias ghostty.conf="nvim ~/.config/ghostty/config"
 alias tmux.conf="nvim ~/.tmux.conf"
 alias aliases="nvim $DOTFILES/configs/aliases.zsh"
-alias zshenv="nvim $ZSH/zshenv/zshenv.zsh"
+alias zshsecrets="nvim ~/.config/zsh/secrets.zsh"
 
 unalias theme 2>/dev/null
 theme() {
-  "$DOTFILES/shell/theme-switch.sh" "$@"
-  [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-  (($+functions[p10k])) && p10k reload 2>/dev/null
-  (($+functions[_p9k_precmd])) && _p9k_precmd 2>/dev/null
-  [[ -o zle ]] && zle .reset-prompt 2>/dev/null
+  "$DOTFILES/theme/theme" "$@"
 }
 
 # Listing

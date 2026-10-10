@@ -12,24 +12,24 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 - **`aliases.zsh`** — Custom aliases, functions, and the `theme` command
 - **`zsh/secrets.zsh.example`** — Example file for private API keys and secrets; copy to `~/.config/zsh/secrets.zsh`
 - **`alacritty.toml`** — Alacritty terminal emulator configuration
-- **`alacritty/themes/tokyonight-*.toml`** — Alacritty dark/light theme files
+- **`theme/resources/alacritty/`** — Alacritty dark/light palettes (old paths are compatibility links)
 - **`wezterm.lua`** — WezTerm terminal emulator configuration
 - **`ghostty/config`** — Ghostty terminal emulator configuration
-- **`ghostty/theme-*.conf`** — Ghostty dark/light theme files
+- **`theme/resources/ghostty/`** — Ghostty theme selections
 
 ### Terminal Multiplexers
 
 - **`tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups, scratchpad, and plugins
-- **`tmux/tokyonight-*.conf`** — Tmux dark/light theme files using tmux user options (`@bg`, `@fg`, ...)
+- **`theme/resources/tmux/`** — Tmux dark/light palettes using tmux user options (`@bg`, `@fg`, ...)
 
 ### Shell Prompt
 
-- **`p10k/p10k-dark.zsh`** — Powerlevel10k configuration for TokyoNight Moon
-- **`p10k/p10k-light.zsh`** — Powerlevel10k configuration for TokyoNight Day
+- **`theme/resources/p10k/p10k.zsh`** — One Powerlevel10k configuration using the terminal ANSI palette
 
 ### Shell Scripts
 
-- **`shell/theme-switch.sh`** — Unified theme switcher for tmux, Ghostty, Alacritty, WezTerm, Neovim, and Powerlevel10k
+- **`theme/theme`** — Theme engine command; `shell/theme-switch.sh` remains a compatibility wrapper
+- **`theme/`** — Portable Go engine, macOS backend, application adapters and resources
 - **`shell/keyboard.sh`** — macOS input source indicator used by the Tmux status bar (shows `RU`/`EN`/etc.)
 
 ### Editor
@@ -47,39 +47,28 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 ![Terminal light](images/terminal-light.png)
 
-## Unified Theme Switching
+## Shared Theme Engine
 
-The `theme` command switches the active theme for tmux, Ghostty, Alacritty, WezTerm, Neovim,
-and the current pane's Powerlevel10k prompt:
+One engine selects TokyoNight Moon/Day for Ghostty, WezTerm, Alacritty, tmux and Neovim.
+It supports persistent manual overrides and automatic macOS appearance tracking.
+All theme sources, application adapters, palettes, tests and installation logic live in [theme/](theme/README.md).
 
 ```bash
-theme dark    # TokyoNight Moon
-theme light   # TokyoNight Day
-theme toggle  # switch between dark and light
-theme status  # show current mode
+theme install    # requires Go >= 1.27, Apple Command Line Tools and Python 3
+theme authorize  # with Ghostty open: allow Theme Automation to reload its config
+theme auto       # follow the system (default)
+theme dark       # persistent manual dark mode
+theme light      # persistent manual light mode
+theme status     # service, preference, mode and per-application diagnostics
+theme sync       # reapply without changing preference
+theme uninstall  # retain preference, last palettes and ANSI prompt
 ```
 
-`theme` is a shell function defined in `configs/aliases.zsh`.
-Zsh completions for it are provided in `shell/completions/` and added to `fpath` in `.zshrc`.
-
-### How it works
-
-- The source of truth is `~/.config/theme/mode` (`dark` or `light`; dark is the default).
-- `~/.config/theme/ghostty-theme.conf` is a symlink to the active Ghostty theme file.
-- `~/.config/theme/alacritty-theme.toml` is a symlink to the active Alacritty theme file.
-- `~/.config/theme/tmux-theme.conf` is a regular file overwritten by the selected Tmux theme.
-  Tmux uses user options (`@bg`, `@fg`, ...) and format references (`#{@bg}`),
-  so color changes apply instantly with a single `source-file`.
-- WezTerm reads `~/.config/theme/mode` and applies the matching built-in color scheme (`tokyonight_moon` or `tokyonight_day`).
-  `~/.wezterm.lua` is touched after a theme change to trigger WezTerm's auto-reload.
-- `~/.p10k.zsh` is a symlink to either `configs/p10k/p10k-dark.zsh` or `configs/p10k/p10k-light.zsh`.
-- Neovim watches `~/.config/theme/mode` and switches between `tokyonight-moon` and `tokyonight-day`.
-  Lualine is rebuilt on every `ColorScheme` event using dynamic colors from `utils/colors.lua`.
-
-### Powerlevel10k update behavior
-
-- The **active pane** updates immediately when you run `theme` (the prompt is redrawn after `p10k reload`).
-- **Other tmux panes** pick up the new p10k theme the next time they run a command.
+Reload existing terminal configurations once after migration. Thereafter changes do not require input or focus changes.
+Neovim retains its existing dark/light mode-file contract. Powerlevel10k uses the terminal ANSI palette.
+The macOS backend is separate from the portable Go engine; additional backends use an executable `read/watch`
+contract, while application integration uses adapter interfaces. The first installer supports macOS.
+See [architecture, migration, extending and verification](theme/README.md) for details.
 
 ## Color Schemes
 
@@ -138,7 +127,7 @@ Files should be placed/symlinked in the following locations:
 
    Aliases are sourced directly from `$DOTFILES/configs/aliases.zsh` in `.zshrc`, so no separate symlink is needed.
 
-4. The `theme` command will create `~/.config/theme/` contents and manage the `~/.p10k.zsh` symlink on first run.
+4. Run `theme install` on macOS to create theme state, link the ANSI p10k config and start the engine; then `theme authorize` with Ghostty open.
 
 5. Install Tmux plugins:
    - Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm)
@@ -150,7 +139,7 @@ Files should be placed/symlinked in the following locations:
 
 - **[Oh My Zsh](https://ohmyz.sh/)** — Framework for Zsh configuration
 - **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — Zsh theme
-  - `~/.p10k.zsh` is a symlink managed by the `theme` command; do not run `p10k configure`
+  - `~/.p10k.zsh` points to the single ANSI config installed by `theme install`; do not run `p10k configure`
     unless you want to overwrite it
 
 ### Optional Terminal Emulators
@@ -204,7 +193,7 @@ The configuration includes numerous aliases for:
 
 ### Custom Functions
 
-- `theme` — Switch the active terminal/editor theme
+- `theme` — Select auto/dark/light, install, inspect and reconcile shared theming
 - `yy()` — Yazi file manager integration
 - `gcom()` — Smart git checkout `master`/`main`
 - `hurl_pretty()` — Pretty-printed HTTP responses

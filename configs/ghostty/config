@@ -1,4 +1,4 @@
-config-file = "~/.config/theme/ghostty-theme.conf"
+config-file = ?../theme/ghostty-theme.conf
 
 window-padding-x = 0
 window-padding-y = 20,0
@@ -14,7 +14,7 @@ macos-window-shadow = false
 macos-option-as-alt = true
 
 font-family = "JetBrainsMono Nerd Font"
-font-size = 15
+font-size = 16
 font-thicken = true
 font-feature = calt
 font-feature = liga
@@ -22,7 +22,6 @@ font-feature = zero
 
 cursor-style = block
 cursor-style-blink = false
-cursor-color = #7aa2f7
 
 mouse-hide-while-typing = true
 

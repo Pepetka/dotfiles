@@ -3,20 +3,17 @@ local act = wezterm.action
 local mux = wezterm.mux
 local config = wezterm.config_builder()
 
--- Read the same theme source of truth used by tmux/ghostty/alacritty.
-local function read_theme_mode()
-	local home = wezterm.home_dir
-	local f = io.open(home .. "/.config/theme/mode", "r")
-	if not f then
-		return "dark"
-	end
-	local mode = f:read("*l") or "dark"
-	f:close()
-	return mode:match("^%s*(.-)%s*$") == "light" and "light" or "dark"
+-- The theme engine installs this bridge under the shared config root.
+local config_root = os.getenv("XDG_CONFIG_HOME")
+if not config_root or config_root == "" then
+	config_root = wezterm.home_dir .. "/.config"
 end
-
-local theme_mode = read_theme_mode()
-config.color_scheme = (theme_mode == "light") and "tokyonight_day" or "tokyonight_moon"
+local theme_bridge = config_root .. "/theme/wezterm-bridge.lua"
+wezterm.add_to_config_reload_watch_list(theme_bridge)
+local load_theme = loadfile(theme_bridge)
+if load_theme then
+	load_theme()(wezterm, config)
+end
 
 -- Non-native fullscreen on macOS (matches Ghostty's non-native fullscreen).
 config.native_macos_fullscreen_mode = false
@@ -50,12 +47,8 @@ config.quit_when_all_windows_are_closed = true
 config.send_composed_key_when_left_alt_is_pressed = false
 config.send_composed_key_when_right_alt_is_pressed = false
 
--- Cursor (matches Ghostty's cursor-style = block, no blink, color #7aa2f7).
+-- Cursor colors come from the current scheme.
 config.default_cursor_style = "SteadyBlock"
-config.colors = {
-	cursor_bg = "#7aa2f7",
-	cursor_border = "#7aa2f7",
-}
 
 -- Key bindings
 config.keys = {

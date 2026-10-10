@@ -12,6 +12,7 @@ export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+export PATH="$PATH:$(go env GOPATH)/bin"
 export DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:$DYLD_FALLBACK_LIBRARY_PATH"
 
 if [[ -n $SSH_CONNECTION ]]; then
@@ -24,10 +25,6 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 DISABLE_LS_COLORS="true"
 DISABLE_AUTO_TITLE="true"
-
-# if [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
-#   export SNACKS_GHOSTTY=true
-# fi
 
 plugins=(
   z
@@ -76,20 +73,6 @@ function _scripts_completion() {
 compdef _scripts_completion pnpm
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-# Auto-reload p10k when the ~/.p10k.zsh symlink target changes.
-autoload -Uz add-zsh-hook
-_p10k_config_target() { readlink ~/.p10k.zsh 2>/dev/null || echo ""; }
-_p10k_last_target="$(_p10k_config_target)"
-_p10k_check_reload() {
-  local current="$(_p10k_config_target)"
-  if [[ "$current" != "$_p10k_last_target" ]]; then
-    _p10k_last_target="$current"
-    [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-    (($+functions[p10k])) && p10k reload 2>/dev/null
-  fi
-}
-add-zsh-hook precmd _p10k_check_reload
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"

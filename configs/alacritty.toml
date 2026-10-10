@@ -1,6 +1,7 @@
 [general]
+live_config_reload = true
 import = [
-    "~/.config/theme/alacritty-theme.toml"
+    "../theme/alacritty-theme.toml"
 ]
 
 [window]
@@ -24,10 +25,6 @@ hide_when_typing = true
 
 [cursor]
 style = { shape = "Block", blinking = "Never" }
-
-[colors.cursor]
-text = "CellBackground"
-cursor = "#7aa2f7"
 
 [selection]
 save_to_clipboard = false
