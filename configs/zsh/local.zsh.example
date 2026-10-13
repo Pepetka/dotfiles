@@ -1,12 +1,41 @@
-# Optional device-specific settings. Copy to ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh.
-# This file loads before tool discovery, Oh My Zsh and plugins.
-# Keep the real local.zsh outside the repository.
+# Copy to ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh.
+# Uncomment only what this machine uses. Loaded after the instant prompt, before Oh My Zsh;
+# keep it silent: console output here triggers a Powerlevel10k warning.
+# Keep secrets in the adjacent secrets.zsh, outside Git.
 
-# export ZSH="$HOME/tools/oh-my-zsh"
+# Shell preferences
+# export EDITOR=nvim
+# export ZSH="$HOME/.oh-my-zsh"
 # export ZSH_CUSTOM="$ZSH/custom"
-# export HOMEBREW_PREFIX="$HOME/tools/homebrew"
-# export NVM_DIR="$HOME/tools/nvm"
-# export BUN_INSTALL="$HOME/tools/bun"
-# export KIMI_CODE_HOME="$HOME/tools/kimi-code"
-# export SDKMAN_DIR="$HOME/tools/sdkman"
-# path=("$HOME/tools/bin" $path)
+# ZSH_THEME="powerlevel10k/powerlevel10k" # Use "" for no theme.
+# plugins=(z fzf npm bun sudo docker direnv extract
+#   alias-tips autoupdate web-search docker-compose git-auto-fetch
+#   zsh-autosuggestions zsh-syntax-highlighting)
+
+# Common user executables (Ubuntu does not need Homebrew).
+# path=("$HOME/.local/bin" "$HOME/bin" "$HOME/go/bin" $path)
+
+# Homebrew: choose the actual location on this machine.
+# macOS Apple Silicon: /opt/homebrew; Intel: /usr/local
+# Linuxbrew: /home/linuxbrew/.linuxbrew
+# eval "$(/opt/homebrew/bin/brew shellenv)"
+# path=("$HOMEBREW_PREFIX/opt/curl/bin" "$HOMEBREW_PREFIX/opt/libpq/bin" $path)
+# export DYLD_FALLBACK_LIBRARY_PATH="$HOMEBREW_PREFIX/lib" # macOS only, if needed.
+
+# NVM (omit the Oh My Zsh nvm plugin when initializing it here).
+# export NVM_DIR="$HOME/.nvm"
+# [[ ! -s "$NVM_DIR/nvm.sh" ]] || source "$NVM_DIR/nvm.sh"
+
+# Bun
+# export BUN_INSTALL="$HOME/.bun"
+# path=("$BUN_INSTALL/bin" $path)
+# [[ ! -s "$BUN_INSTALL/_bun" ]] || source "$BUN_INSTALL/_bun"
+
+# Other tools
+# path=("$HOME/.kimi-code/bin" $path)
+# [[ ! -r "$HOME/.local/bin/env" ]] || source "$HOME/.local/bin/env"
+# path+=(/Applications/WezTerm.app/Contents/MacOS) # macOS only
+
+# SDKMAN
+# export SDKMAN_DIR="$HOME/.sdkman"
+# [[ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] || source "$SDKMAN_DIR/bin/sdkman-init.sh"

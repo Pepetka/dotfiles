@@ -9,10 +9,10 @@ export GOCACHE="${GOCACHE:-$test_directory/go-cache}"
 for script in "$source_directory/theme" "$source_directory/install.sh" "$source_directory/tests/"*.sh "$root_directory/shell/theme-switch.sh" "$root_directory/shell/tests/theme-sync.sh"; do
   bash -n "$script"
 done
-for config in "$root_directory/configs/aliases.zsh" "$root_directory/configs/.zshrc" "$source_directory/resources/p10k/"*.zsh "$source_directory/completions/_theme"; do
+for config in "$root_directory/configs/zsh/aliases.zsh" "$root_directory/configs/zsh/.zshrc" "$root_directory/configs/zsh/functions.zsh" "$root_directory/configs/zsh/local.zsh.example" "$source_directory/resources/p10k/"*.zsh "$source_directory/completions/_theme"; do
   zsh -n "$config"
 done
-if DOTFILES="$root_directory" zsh -c 'source "$DOTFILES/configs/aliases.zsh"; theme invalid' >/dev/null 2>&1; then
+if DOTFILES="$root_directory" zsh -c 'source "$DOTFILES/configs/zsh/aliases.zsh"; theme invalid' >/dev/null 2>&1; then
   echo 'Invalid theme command incorrectly succeeded' >&2
   exit 1
 fi

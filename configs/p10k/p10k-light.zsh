@@ -1,1 +1,0 @@
-../../theme/resources/p10k/p10k-light.zsh

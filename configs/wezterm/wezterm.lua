@@ -2,6 +2,8 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local mux = wezterm.mux
 local config = wezterm.config_builder()
+local is_macos = wezterm.target_triple:find("apple%-darwin") ~= nil
+local clipboard_mods = is_macos and "CMD" or "CTRL|SHIFT"
 
 -- The theme engine installs this bridge under the shared config root.
 local config_root = os.getenv("XDG_CONFIG_HOME")
@@ -16,7 +18,10 @@ if load_theme then
 end
 
 -- Non-native fullscreen on macOS (matches Ghostty's non-native fullscreen).
-config.native_macos_fullscreen_mode = false
+if is_macos then
+	config.native_macos_fullscreen_mode = false
+	config.macos_window_background_blur = 50
+end
 
 -- Start in fullscreen.
 wezterm.on("gui-startup", function(cmd)
@@ -32,7 +37,6 @@ config.freetype_render_target = "Normal"
 config.harfbuzz_features = { "calt=1", "liga=1", "zero=1" }
 config.window_padding = { left = 0, right = 0, top = 20, bottom = 0 }
 config.window_background_opacity = 0.85
-config.macos_window_background_blur = 50
 config.window_decorations = "NONE"
 config.enable_tab_bar = false
 config.use_fancy_tab_bar = false
@@ -52,8 +56,8 @@ config.default_cursor_style = "SteadyBlock"
 
 -- Key bindings
 config.keys = {
-	{ key = "c", mods = "CMD", action = act.CopyTo("Clipboard") },
-	{ key = "v", mods = "CMD", action = act.PasteFrom("Clipboard") },
+	{ key = "c", mods = clipboard_mods, action = act.CopyTo("Clipboard") },
+	{ key = "v", mods = clipboard_mods, action = act.PasteFrom("Clipboard") },
 	{ key = "Enter", mods = "SHIFT", action = act.SendString("\x1b[13;2u") },
 }
 

@@ -8,19 +8,20 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 ### Terminal & Shell
 
-- **`.zshrc`** — Main Zsh configuration with Oh My Zsh, Powerlevel10k, plugins, and environment settings
-- **`aliases.zsh`** — Custom aliases, functions, and the `theme` command
+- **`zsh/.zshrc`** — Main Zsh configuration with Oh My Zsh, Powerlevel10k, plugins, and environment settings
+- **`zsh/aliases.zsh`** — Custom aliases and the `theme` command
+- **`zsh/functions.zsh`** — Git, Yazi and Tmux helpers
 - **`zsh/secrets.zsh.example`** — Example file for private API keys and secrets
 - **`zsh/local.zsh.example`** — Optional device-specific tool paths and settings
-- **`alacritty.toml`** — Alacritty terminal emulator configuration
-- **`theme/resources/alacritty/`** — Alacritty dark/light palettes (old paths are compatibility links)
-- **`wezterm.lua`** — WezTerm terminal emulator configuration
+- **`alacritty/alacritty.toml`** — Alacritty terminal emulator configuration
+- **`theme/resources/alacritty/`** — Alacritty dark/light palettes
+- **`wezterm/wezterm.lua`** — WezTerm terminal emulator configuration
 - **`ghostty/config`** — Ghostty terminal emulator configuration
 - **`theme/resources/ghostty/`** — Ghostty theme selections
 
 ### Terminal Multiplexers
 
-- **`tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups, scratchpad, and plugins
+- **`tmux/tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups, scratchpad, and plugins
 - **`theme/resources/tmux/`** — Tmux dark/light palettes using tmux user options (`@bg`, `@fg`, ...)
 
 ### Shell Prompt
@@ -120,20 +121,20 @@ Files should be placed/symlinked in the following locations:
 
    ```bash
    # Zsh configuration
-   ln -s "$DOTFILES/configs/.zshrc" "${ZDOTDIR:-$HOME}/.zshrc"
+   ln -s "$DOTFILES/configs/zsh/.zshrc" "${ZDOTDIR:-$HOME}/.zshrc"
 
    # Terminal emulators
-   ln -s "$DOTFILES/configs/alacritty.toml" "$config_root/alacritty/alacritty.toml"
+   ln -s "$DOTFILES/configs/alacritty/alacritty.toml" "$config_root/alacritty/alacritty.toml"
    ln -s "$DOTFILES/configs/ghostty/config" "$config_root/ghostty/config"
    ln -s "$DOTFILES/configs/hunk/config.toml" "$config_root/hunk/config.toml"
-   ln -s "$DOTFILES/configs/wezterm.lua" "$HOME/.wezterm.lua"
+   ln -s "$DOTFILES/configs/wezterm/wezterm.lua" "$HOME/.wezterm.lua"
 
    # Tmux
-   ln -s "$DOTFILES/configs/tmux.conf" "$HOME/.tmux.conf"
+   ln -s "$DOTFILES/configs/tmux/tmux.conf" "$HOME/.tmux.conf"
    ln -s "$DOTFILES/shell/keyboard.sh" "$HOME/.tmux/keyboard.sh"
    ```
 
-   Aliases are sourced directly from `$DOTFILES/configs/aliases.zsh` in `.zshrc`, so no separate symlink is needed.
+   Aliases are sourced directly from `$DOTFILES/configs/zsh/aliases.zsh` in `.zshrc`, so no separate symlink is needed.
    `.zshrc` derives `DOTFILES` from its symlink target; the checkout may live anywhere.
    An explicitly exported `DOTFILES` takes precedence. Keep `XDG_CONFIG_HOME` consistent
    between the shell, terminal applications and service installation when using a custom root.
@@ -148,6 +149,28 @@ Files should be placed/symlinked in the following locations:
    - Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm)
    - Open Tmux and press `prefix + I` to install plugins
 
+## Migrating an existing checkout
+
+Configuration sources now live in `configs/<application>/`. Recreate existing
+application symlinks using the paths above (back up real files before replacing them).
+The old flat paths and palette compatibility links in `configs/` have been removed.
+Copy and configure `zsh/local.zsh.example` before reloading Zsh: tool initialization
+previously embedded in `.zshrc` now belongs to the device-local file.
+
+Palettes have one canonical source in `theme/resources/<application>/`.
+The engine reads those resources directly and publishes the selected palette under
+`${XDG_CONFIG_HOME:-$HOME/.config}/theme/`; terminal configs consume that generated
+state to follow dark/light changes. These generated files are not duplicate source links.
+
+On Ubuntu, the shell and application configs can be used independently of the theme
+service. The current theme installer and automatic appearance integration remain macOS
+only. To use the matching Alacritty colors without the engine, for a static
+Linux setup, copy the desired palette from `theme/resources/alacritty/` to
+`$config_root/theme/alacritty-theme.toml`.
+Likewise copy a Ghostty or tmux palette to `theme/ghostty-theme.conf` or
+`theme/tmux-theme.conf` under your config root. WezTerm falls back to Moon when no
+bridge is installed. Linux theme-engine installation will be handled separately.
+
 ## Prerequisites
 
 ### Shell setup
@@ -155,18 +178,31 @@ Files should be placed/symlinked in the following locations:
 - **Zsh** — Required for `.zshrc`; aliases and completion work without optional frameworks
 - **[Oh My Zsh](https://ohmyz.sh/)** — Optional framework for plugins
 - **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — Optional Zsh theme
-  - `~/.p10k.zsh` points to the single ANSI config installed by `theme install`; do not run `p10k configure`
-    unless you want to overwrite it
+  - Zsh loads `theme/resources/p10k/p10k.zsh` directly when Powerlevel10k is available
 
-Homebrew is discovered from `PATH`, `HOMEBREW_PREFIX` or standard installation
-locations. Its actual prefix supplies tool and library paths; missing Homebrew,
-Go, plugins and optional initialization scripts do not prevent shell startup.
-Only installed Oh My Zsh plugins are enabled. Path entries are deduplicated.
+The shared Zsh config initializes completion, optional Oh My Zsh plugins, aliases
+and the ANSI prompt. It does not discover Homebrew, alter library paths or start SDKs.
+`ls` uses eza only when it is installed; otherwise the system command stays available.
+`EDITOR` defaults to `nvim` when installed, otherwise `vim`.
+The default plugins are `z`, `sudo`, `zsh-autosuggestions` and `zsh-syntax-highlighting`;
+the Oh My Zsh `git` plugin is omitted because `aliases.zsh` defines its own Git aliases.
+Path entries are deduplicated.
 
-For nonstandard paths, copy `configs/zsh/local.zsh.example` to
-`${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh` and adjust it on that device.
-It loads before tool/framework setup and supports `ZSH`, `ZSH_CUSTOM`,
-`HOMEBREW_PREFIX`, `NVM_DIR`, `BUN_INSTALL`, `KIMI_CODE_HOME` and `SDKMAN_DIR`.
+Copy `configs/zsh/local.zsh.example` to
+`${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh` and uncomment the settings this
+machine needs. It loads after the Powerlevel10k instant prompt and before framework
+setup, and contains examples for Homebrew, user executable paths, NVM, Bun, SDKMAN,
+editor and plugin preferences.
+On Ubuntu, use native packages and user paths; Homebrew is optional. Ubuntu's
+`/etc/zsh/zshrc` runs `compinit` before Oh My Zsh does it again; skip the first call:
+
+```bash
+echo 'skip_global_compinit=1' >> "${ZDOTDIR:-$HOME}/.zshenv"
+```
+
+Ubuntu 24.04 and older ship tmux below 3.5, which ignores `extended-keys-format`.
+Alacritty's `SimpleFullscreen` startup mode is macOS-only; on Linux the window opens
+windowed.
 Keep API keys in `zsh/secrets.zsh` under the same config root, outside Git.
 Codex authentication, trusted projects and device-specific MCP configuration
 remain local and are preserved by its installer.

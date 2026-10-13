@@ -40,7 +40,7 @@ func TestApplications(t *testing.T) {
 		if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
 			t.Fatal(err)
 		}
-		resource := filepath.Join(root, "configs", name)
+		resource := filepath.Join(root, "configs", app, name)
 		if app == "ghostty" {
 			resource = filepath.Join(root, "configs/ghostty/config")
 		}
@@ -93,7 +93,7 @@ func TestApplications(t *testing.T) {
 		}
 		if wezterm, err := exec.LookPath("wezterm"); err == nil {
 			check := filepath.Join(temporary, "wezterm-check.lua")
-			quoted, _ := json.Marshal(filepath.Join(root, "configs/wezterm.lua"))
+			quoted, _ := json.Marshal(filepath.Join(root, "configs/wezterm/wezterm.lua"))
 			write(check, []byte(fmt.Sprintf("local config = dofile(%s)\nassert(config.color_scheme == %q)\nreturn config\n", quoted, "tokyonight_"+variant.style)), 0600)
 			requireRun(wezterm, "--config-file", check, "show-keys")
 		}
