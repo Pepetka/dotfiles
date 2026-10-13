@@ -238,6 +238,14 @@ func editTOML(data []byte, path []string, value any, present bool) ([]byte, erro
 			for begin > 0 && (data[begin-1] == ' ' || data[begin-1] == '\t') {
 				begin--
 			}
+			// A removed assignment that occupied its whole line takes the line break too.
+			if begin == 0 || data[begin-1] == '\n' {
+				if bytes.HasPrefix(data[end:], []byte("\r\n")) {
+					end += 2
+				} else if bytes.HasPrefix(data[end:], []byte("\n")) {
+					end++
+				}
+			}
 		}
 		break
 	}

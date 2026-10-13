@@ -18,9 +18,12 @@ macos_layout() {
   command -v defaults >/dev/null 2>&1 || return 0
   local layout
   layout=$(defaults read "$HOME/Library/Preferences/com.apple.HIToolbox.plist" AppleSelectedInputSources 2>/dev/null | awk '/KeyboardLayout Name/' | sed -E 's/^.+ = \"?([^\"]+)\"?;$/\1/')
+  # Names such as "ABC", "U.S.", "RussianWin" or "Ukrainian-PC" map to the codes used on Linux.
   case "$layout" in
-  "Russian") echo "RU" ;;
-  "ABC") echo "EN" ;;
+  "") ;;
+  ABC* | U.S.* | US* | British* | Australian | Canadian) echo EN ;;
+  Russian*) echo RU ;;
+  Ukrainian*) echo UA ;;
   *) echo "$layout" ;;
   esac
 }

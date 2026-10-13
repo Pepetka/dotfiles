@@ -13,8 +13,10 @@ typeset -U path fpath
 if [[ -z "$EDITOR" ]]; then
   if (( $+commands[nvim] )); then
     export EDITOR=nvim
-  else
+  elif (( $+commands[vim] )); then
     export EDITOR=vim
+  else
+    export EDITOR=vi
   fi
 fi
 export ZSH="${ZSH:-$HOME/.oh-my-zsh}"
@@ -52,6 +54,9 @@ fi
 source "$DOTFILES/configs/zsh/aliases.zsh"
 source "$DOTFILES/configs/zsh/functions.zsh"
 WORDCHARS=${WORDCHARS//:/}
+
+# Initialization that needs completion (compdef) runs after the framework.
+[[ ! -r "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.after.zsh" ]] || source "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.after.zsh"
 
 # Load the shared ANSI prompt directly from its canonical source.
 if (( $+functions[p10k] )); then

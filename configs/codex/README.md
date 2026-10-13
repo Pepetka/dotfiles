@@ -16,7 +16,7 @@ sh configs/codex/install.sh --dry-run
 sh configs/codex/install.sh
 ```
 
-Requires Go 1.27+ on macOS or Linux. The installer runs the standalone Go module
+Requires Go 1.27+, or Go 1.21+ which downloads the declared toolchain, on macOS or Linux. The installer runs the standalone Go module
 in this directory; it does not start or change the theme engine. The TOML parser
 is pinned in `go.mod`/`go.sum`. The first run downloads the Go dependency; cached
 dependencies allow subsequent runs offline. Python, pip and virtual environments

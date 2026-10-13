@@ -17,7 +17,11 @@ trap cleanup EXIT
 repository="$test_directory/relocated repo"
 test_home="$test_directory/test home"
 config_root="$test_directory/config with spaces"
-mkdir -p "$repository/theme" "$test_home" "$config_root/zsh" "$test_directory/bin"
+mkdir -p "$repository/theme" "$test_home" "$config_root/zsh" "$test_directory/bin" "$test_directory/tools"
+# Expose only the utilities zsh needs; packaged eza/nvim/vim must not leak in.
+for tool in mv cat rm mkdir chmod; do
+  ln -s "$(command -v "$tool")" "$test_directory/tools/$tool"
+done
 cp -R "$source_directory/configs" "$repository/configs"
 cp -R "$source_directory/shell" "$repository/shell"
 cp -R "$source_directory/theme/completions" "$repository/theme/completions"
@@ -39,26 +43,26 @@ chmod 700 "$test_directory/bin/"*
 zsh_executable="$(command -v zsh)"
 run_zsh() {
   env -i HOME="$test_home" XDG_CONFIG_HOME="$config_root" \
-    PATH="$test_directory/bin:/usr/bin:/bin" \
-    PORTABILITY_TEST_PROBE="$test_directory/probed" \
+    PATH="$test_directory/bin:$test_directory/tools" \
+    PORTABILITY_TEST_PROBE="$test_directory/probed" PORTABILITY_TEST_DIR="$test_directory" \
     PORTABILITY_TEST_REPO="$repository" PORTABILITY_TEST_ARGS="$test_directory/args" \
     PORTABILITY_TEST_BREW_PREFIX="${test_brew_prefix:-}" PORTABILITY_TEST_GOPATH="${test_go_path:-}" \
-    "$zsh_executable" -f "$@"
+    "$zsh_executable" -f -c "fail() { print -ru2 -- \"assertion failed at snippet line \$1\"; exit 1 }"$'\n'"$2"
 }
 # Resolve a relocated repository through ~/.zshrc, tolerate absent tools and optional files.
 run_zsh -c '
   source "$HOME/.zshrc"
-  [[ "$DOTFILES" == "$PORTABILITY_TEST_REPO" ]] || exit 1
-  (( $+functions[theme] && $+functions[compdef] )) || exit 1
-  [[ -z "$BUN_INSTALL" && -z "$KIMI_CODE_HOME" && -z "$HOMEBREW_PREFIX" ]] || exit 1
-  (( ${fpath[(Ie)$DOTFILES/theme/completions]} )) || exit 1
-  (( ! $+aliases[ls] )) || exit 1
-  [[ "$EDITOR" == nvim && -z "$DISABLE_LS_COLORS" ]] || exit 1
-  (( ! ${plugins[(Ie)git]} )) || exit 1
+  [[ "$DOTFILES" == "$PORTABILITY_TEST_REPO" ]] || fail $LINENO
+  (( $+functions[theme] && $+functions[compdef] )) || fail $LINENO
+  [[ -z "$BUN_INSTALL" && -z "$KIMI_CODE_HOME" && -z "$HOMEBREW_PREFIX" ]] || fail $LINENO
+  (( ${fpath[(Ie)$DOTFILES/theme/completions]} )) || fail $LINENO
+  (( ! $+aliases[ls] )) || fail $LINENO
+  [[ "$EDITOR" == nvim && -z "$DISABLE_LS_COLORS" ]] || fail $LINENO
+  (( ! ${plugins[(Ie)git]} )) || fail $LINENO
   source "$HOME/.zshrc"
   typeset -Ua unique_path
   unique_path=("${path[@]}")
-  (( $#path == $#unique_path )) || exit 1
+  (( $#path == $#unique_path )) || fail $LINENO
   eval alacritty.conf
 ' >"$test_directory/startup.log" 2>&1
 [[ ! -s "$test_directory/startup.log" ]]
@@ -68,17 +72,24 @@ ln -s "$repository/configs" "$test_home/alternate dotfiles/configs"
 run_zsh -c '
   export DOTFILES="$HOME/alternate dotfiles"
   source "$HOME/.zshrc"
-  [[ "$DOTFILES" == "$HOME/alternate dotfiles" ]] || exit 1
+  [[ "$DOTFILES" == "$HOME/alternate dotfiles" ]] || fail $LINENO
 ' >"$test_directory/override.log" 2>&1
 [[ ! -s "$test_directory/override.log" ]]
-# Hosts without Neovim, such as minimal Ubuntu servers, fall back to vim.
-# compinit only needs mv to write its dump; /bin may contain a packaged nvim.
-mkdir -p "$test_directory/minimal bin"
+# Hosts without Neovim fall back to vim, and minimal Ubuntu images to vi.
+# compinit only needs mv to write its dump.
+mkdir -p "$test_directory/minimal bin" "$test_directory/vim bin"
 ln -s "$(command -v mv)" "$test_directory/minimal bin/mv"
+ln -s "$(command -v mv)" "$test_directory/vim bin/mv"
+printf '#!/bin/sh\n' >"$test_directory/vim bin/vim"
+chmod 700 "$test_directory/vim bin/vim"
 run_zsh -c '
-  path=("$HOME/../minimal bin")
+  path=("$PORTABILITY_TEST_DIR/vim bin")
   source "$HOME/.zshrc"
-  [[ "$EDITOR" == vim ]] || exit 1
+  [[ "$EDITOR" == vim ]] || fail $LINENO
+  unset EDITOR
+  path=("$PORTABILITY_TEST_DIR/minimal bin")
+  source "$HOME/.zshrc"
+  [[ "$EDITOR" == vi ]] || fail $LINENO
 ' >"$test_directory/editor.log" 2>&1
 [[ ! -s "$test_directory/editor.log" ]]
 test_brew_prefix="$test_directory/custom brew"
@@ -118,26 +129,29 @@ echo 'export PORTABILITY_SDK=loaded' >"$test_home/custom sdk/bin/sdkman-init.sh"
 echo 'export PORTABILITY_LOCAL_ENV=loaded' >"$test_home/.local/bin/env"
 echo 'export PORTABILITY_PROMPT=loaded' >"$repository/theme/resources/p10k/p10k.zsh"
 echo 'export PORTABILITY_SECRETS=loaded' >"$config_root/zsh/secrets.zsh"
+# Completion-registering setup runs after the framework and shared aliases.
+echo 'export PORTABILITY_AFTER=$+functions[compdef]$+aliases[gs]' >"$config_root/zsh/local.after.zsh"
 run_zsh -c '
   source "$HOME/.zshrc"
-  [[ "$PORTABILITY_OMZ/$PORTABILITY_BUN/$PORTABILITY_SDK/$PORTABILITY_LOCAL_ENV/$PORTABILITY_PROMPT/$PORTABILITY_SECRETS" == loaded/loaded/loaded/loaded/loaded/loaded ]] || exit 1
-  [[ "${(j:,:)plugins}" == git,zsh-autosuggestions && "$ZSH_THEME" == powerlevel10k/powerlevel10k ]] || exit 1
+  [[ "$PORTABILITY_OMZ/$PORTABILITY_BUN/$PORTABILITY_SDK/$PORTABILITY_LOCAL_ENV/$PORTABILITY_PROMPT/$PORTABILITY_SECRETS" == loaded/loaded/loaded/loaded/loaded/loaded ]] || fail $LINENO
+  [[ "$PORTABILITY_AFTER" == 11 ]] || fail $LINENO
+  [[ "${(j:,:)plugins}" == git,zsh-autosuggestions && "$ZSH_THEME" == powerlevel10k/powerlevel10k ]] || fail $LINENO
   for expected in "$PORTABILITY_TEST_BREW_PREFIX/bin" "$PORTABILITY_TEST_BREW_PREFIX/opt/libpq/bin" "$PORTABILITY_TEST_BREW_PREFIX/opt/curl/bin" "$HOME/custom bun/bin" "$HOME/custom kimi/bin"; do
-    (( ${path[(Ie)$expected]} )) || exit 1
+    (( ${path[(Ie)$expected]} )) || fail $LINENO
   done
   for expected in ${(s.:.)PORTABILITY_TEST_GOPATH}; do
     expected+="/bin"
-    (( ${path[(Ie)$expected]} )) || exit 1
+    (( ${path[(Ie)$expected]} )) || fail $LINENO
   done
-  (( ${path[(Ie)$PORTABILITY_TEST_BREW_PREFIX/opt/curl/bin]} < ${path[(Ie)$PORTABILITY_TEST_BREW_PREFIX/bin]} )) || exit 1
+  (( ${path[(Ie)$PORTABILITY_TEST_BREW_PREFIX/opt/curl/bin]} < ${path[(Ie)$PORTABILITY_TEST_BREW_PREFIX/bin]} )) || fail $LINENO
   source "$HOME/.zshrc"
   typeset -Ua unique_path
   unique_path=("${path[@]}")
-  (( $#path == $#unique_path )) || exit 1
+  (( $#path == $#unique_path )) || fail $LINENO
 ' >"$test_directory/custom.log" 2>&1
 [[ ! -s "$test_directory/custom.log" ]]
 [[ ! -e "$test_directory/probed" ]]
-echo 'Portable Zsh config passed: relocated repo, symlinks/spaces, XDG, missing tools, explicit local setup, optional plugins and repeated sourcing'
+echo 'Portable Zsh config passed: relocated repo, symlinks/spaces, XDG, missing tools, explicit local/after setup, editor fallbacks, optional plugins and repeated sourcing'
 
 bash "$source_directory/shell/tests/keyboard.sh"
 if command -v lua >/dev/null; then

@@ -10,7 +10,8 @@ mkdir -p "$test_directory/bin" "$test_directory/home" "$test_directory/config wi
 export THEME_TEST_ROOT="$test_directory" THEME_TEST_BINARIES="$binaries"
 export HOME="$test_directory/home"
 export XDG_CONFIG_HOME="$test_directory/config with spaces"
-export DOTFILES="$(dirname "$source_directory")"
+DOTFILES="$(dirname "$source_directory")"
+export DOTFILES
 export PATH="$test_directory/bin:$PATH"
 export TMUX_TMPDIR="$test_directory/tmux"
 cat >"$test_directory/bin/go" <<'SH'
@@ -101,9 +102,19 @@ fi
 "$theme" status | grep -q '"backend": "manual"'
 
 rm "$test_directory/no-manager"
+# An unreadable system appearance fails before touching the manual installation.
+mv "$test_directory/bin/gsettings" "$test_directory/gsettings"
+if "$theme" install 2>"$test_directory/error.log"; then
+  fail 'Unreadable system backend incorrectly accepted'
+fi
+grep -q 'system backend cannot read' "$test_directory/error.log"
+[[ ! -e "$unit" && "$(cat "$directory/preference")" == light ]]
+mv "$test_directory/gsettings" "$test_directory/bin/gsettings"
 "$theme" install
 [[ -f "$unit" && -f "$test_directory/active" ]]
+# The auto policy replaced by manual installation is restored.
+[[ "$(cat "$directory/preference")" == auto && ! -e "$directory/.auto-before-manual" ]]
 "$theme" uninstall
 [[ ! -e "$unit" && ! -f "$test_directory/enabled" && ! -e "$directory/theme-sync" ]]
 [[ "$(cat "$directory/mode")" == light ]]
-echo 'Linux installer passed: systemd unit, portal fallback, rollback, missing manager, manual mode and uninstall'
+echo 'Linux installer passed: systemd unit, portal fallback, rollback, missing manager, backend validation, manual mode, auto restoration and uninstall'

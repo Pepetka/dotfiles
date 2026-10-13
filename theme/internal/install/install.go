@@ -2,6 +2,7 @@
 package install
 
 import (
+	"context"
 	"crypto/sha256"
 	"dotfiles/theme/internal/engine"
 	"dotfiles/theme/internal/service"
@@ -16,6 +17,10 @@ import (
 )
 
 const usage = "usage: theme {install [--manual | --backend PATH]|uninstall}"
+
+// Records that manual installation replaced an auto policy, so a later
+// automatic installation can follow the system again.
+const manualMarker = ".auto-before-manual"
 
 // Every artifact any platform or mode may install; switching modes removes the
 // ones the new build does not provide.
@@ -302,10 +307,13 @@ func (i installer) install(backend string) error {
 		}
 	}
 	preference := engine.Mode("")
+	restoreAuto := !i.manual && exists(filepath.Join(i.directory, manualMarker))
 	if i.manual {
 		if preference, err = i.manualPreference(); err != nil {
 			return err
 		}
+	} else if restoreAuto {
+		preference = engine.Auto
 	}
 	preflight := path("preflight")
 	if err := os.Mkdir(preflight, 0700); err != nil {
@@ -328,6 +336,11 @@ func (i installer) install(backend string) error {
 	if backend == defaultBackend {
 		c.Backend = path(platformBackend())
 	}
+	if !i.manual {
+		if _, err := (engine.ExecutableBackend{Path: c.Backend}).Read(context.Background()); err != nil {
+			return fmt.Errorf("the system backend cannot read the appearance; fix the desktop session or use: theme install --manual\n%w", err)
+		}
+	}
 	if err := writeJSON(path("preflight.json"), c); err != nil {
 		return err
 	}
@@ -336,6 +349,15 @@ func (i installer) install(backend string) error {
 	}
 	if err := i.commit(build); err != nil {
 		return err
+	}
+	if restoreAuto {
+		if _, err := engine.AtomicWrite(filepath.Join(i.directory, "preference"), []byte("auto\n")); err != nil {
+			return err
+		}
+		if err := os.Remove(filepath.Join(i.directory, manualMarker)); err != nil {
+			return err
+		}
+		fmt.Println("Restored the auto preference replaced by manual installation.")
 	}
 	if !i.manual {
 		fmt.Println("Theme engine installed with the " + i.service.Name() + " service. Reload existing terminal configs once to adopt the engine.")
@@ -348,7 +370,10 @@ func (i installer) install(backend string) error {
 		if _, err := engine.AtomicWrite(filepath.Join(i.directory, "preference"), []byte(preference+"\n")); err != nil {
 			return err
 		}
-		fmt.Printf("Manual mode cannot follow the system; preference auto replaced with %s.\n", preference)
+		if err := os.WriteFile(filepath.Join(i.directory, manualMarker), nil, 0600); err != nil {
+			return err
+		}
+		fmt.Printf("Manual mode cannot follow the system; preference auto replaced with %s until the next theme install.\n", preference)
 	}
 	// No service publishes the palettes, so apply the current selection now.
 	if err := command("", filepath.Join(i.directory, "theme-sync"), "sync", "--theme-dir", i.directory); err != nil {

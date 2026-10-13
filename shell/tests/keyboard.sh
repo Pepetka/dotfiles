@@ -33,7 +33,7 @@ expect() {
   }
 }
 reset() {
-  rm -rf "$test_directory/bin"
+  rm -rf "${test_directory:?}/bin"
   mkdir -p "$test_directory/bin"
 }
 
@@ -43,6 +43,12 @@ stub defaults "printf '%s\n' '\"KeyboardLayout Name\" = \"ABC\";'"
 expect EN Darwin
 stub defaults "printf '%s\n' '\"KeyboardLayout Name\" = \"Russian\";'"
 expect RU Darwin
+stub defaults "printf '%s\n' '\"KeyboardLayout Name\" = RussianWin;'"
+expect RU Darwin
+stub defaults "printf '%s\n' '\"KeyboardLayout Name\" = \"U.S.\";'"
+expect EN Darwin
+stub defaults "printf '%s\n' '\"KeyboardLayout Name\" = \"Ukrainian-PC\";'"
+expect UA Darwin
 
 # Linux stays silent without a graphical session or supported desktop.
 reset

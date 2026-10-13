@@ -12,7 +12,8 @@ export THEME_TEST_ROOT="$test_directory"
 export THEME_TEST_SOURCE="$source_directory"
 export HOME="$test_directory/home"
 export XDG_CONFIG_HOME="$test_directory/config with spaces"
-export DOTFILES="$(dirname "$source_directory")"
+DOTFILES="$(dirname "$source_directory")"
+export DOTFILES
 export PATH="$test_directory/bin:$PATH"
 # Point the default tmux socket at an empty directory, never at the user's server.
 export TMUX_TMPDIR="$test_directory/tmux"
@@ -142,6 +143,8 @@ fi
 "$source_directory/theme" status | rg -q '"backend": "manual"'
 # A regular installation restores the service with the platform backend.
 "$source_directory/theme" install
+# The auto policy replaced by manual installation is restored.
+[[ "$(cat "$directory/preference")" == auto && ! -e "$directory/.auto-before-manual" ]]
 [[ -f "$test_directory/loaded" && -f "$plist" ]]
 [[ "$(plutil -extract backend raw "$directory/engine.json")" == "$directory/macos-backend" ]]
 [[ "$(plutil -extract service raw "$directory/engine.json")" == launchd ]]

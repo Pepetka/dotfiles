@@ -8,20 +8,22 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 ### Terminal & Shell
 
-- **`zsh/.zshrc`** — Main Zsh configuration with Oh My Zsh, Powerlevel10k, plugins, and environment settings
-- **`zsh/aliases.zsh`** — Custom aliases and the `theme` command
-- **`zsh/functions.zsh`** — Git, Yazi and Tmux helpers
-- **`zsh/secrets.zsh.example`** — Example file for private API keys and secrets
-- **`zsh/local.zsh.example`** — Optional device-specific tool paths and settings
-- **`alacritty/alacritty.toml`** — Alacritty terminal emulator configuration
+- **`configs/zsh/.zshrc`** — Main Zsh configuration with Oh My Zsh, Powerlevel10k, plugins, and environment settings
+- **`configs/zsh/aliases.zsh`** — Custom aliases and the `theme` command
+- **`configs/zsh/functions.zsh`** — Git, Yazi and Tmux helpers
+- **`configs/zsh/secrets.zsh.example`** — Example file for private API keys and secrets
+- **`configs/zsh/local.zsh.example`** — Optional device-specific tool paths and settings
+- **`configs/zsh/local.after.zsh.example`** — Optional device-specific setup that registers completions
+- **`configs/alacritty/alacritty.toml`** — Alacritty terminal emulator configuration
 - **`theme/resources/alacritty/`** — Alacritty dark/light palettes
-- **`wezterm/wezterm.lua`** — WezTerm terminal emulator configuration
-- **`ghostty/config`** — Ghostty terminal emulator configuration
+- **`configs/wezterm/wezterm.lua`** — WezTerm terminal emulator configuration
+- **`configs/ghostty/config`** — Ghostty terminal emulator configuration
 - **`theme/resources/ghostty/`** — Ghostty theme selections
+- **`configs/hunk/config.toml`** — Hunk diff viewer settings, keybindings and Tokyo Night Moon/Day themes
 
 ### Terminal Multiplexers
 
-- **`tmux/tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups,
+- **`configs/tmux/tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups,
   scratchpad, and plugins
 - **`theme/resources/tmux/`** — Tmux dark/light palettes using tmux user options (`@bg`, `@fg`, ...)
 
@@ -64,7 +66,7 @@ and Linux (XDG Desktop Portal, e.g. Ubuntu GNOME), or a manual-only mode without
 All theme sources, application adapters, palettes, tests and installation logic live in [theme/](theme/README.md).
 
 ```bash
-theme install    # requires Go >= 1.27 (and Apple Command Line Tools on macOS)
+theme install    # requires Go (and Apple Command Line Tools on macOS)
 theme install --manual  # no service or system backend: dark/light only
 theme authorize  # macOS, with Ghostty open: allow Theme Automation to reload its config
 theme auto       # follow the system (default)
@@ -78,7 +80,8 @@ theme uninstall  # retain preference, last palettes and ANSI prompt
 Reload existing terminal configurations once after migration. Thereafter changes do not require input or focus changes.
 Neovim retains its existing dark/light mode-file contract. Powerlevel10k uses the terminal ANSI palette.
 The macOS backend is separate from the portable Go engine; additional backends use an executable `read/watch`
-contract, while application integration uses adapter interfaces. The first installer supports macOS.
+contract, while application integration uses adapter interfaces. Installation supports macOS (LaunchAgent)
+and Linux (systemd user service).
 See [architecture, migration, extending and verification](theme/README.md) for details.
 
 ## Color Schemes
@@ -96,7 +99,9 @@ Files should be placed/symlinked in the following locations:
 ~/.config/ghostty/config
 ~/.config/hunk/config.toml
 ~/.config/theme/
-~/.config/zsh/secrets.zsh
+~/.config/zsh/local.zsh        # optional, local file
+~/.config/zsh/local.after.zsh  # optional, local file
+~/.config/zsh/secrets.zsh      # optional, local file
 ~/.wezterm.lua
 ~/.tmux.conf
 ~/.tmux/keyboard.sh
@@ -142,8 +147,9 @@ Files should be placed/symlinked in the following locations:
    An explicitly exported `DOTFILES` takes precedence. Keep `XDG_CONFIG_HOME` consistent
    between the shell, terminal applications and service installation when using a custom root.
 
-4. Run `"$DOTFILES/theme/theme" install` on macOS to create theme state, link the ANSI p10k config and start the engine;
-   then `"$DOTFILES/theme/theme" authorize` with Ghostty open.
+4. Run `"$DOTFILES/theme/theme" install` to build the engine, publish the palettes and start the service
+   (`--manual` without a service, e.g. in WSL or containers). On macOS, then run
+   `"$DOTFILES/theme/theme" authorize` with Ghostty open.
 
    For Codex, run `sh "$DOTFILES/configs/codex/install.sh" --dry-run`, then `sh "$DOTFILES/configs/codex/install.sh"`.
    See [Codex configuration](configs/codex/README.md) for update behavior and profiles.
@@ -157,7 +163,7 @@ Files should be placed/symlinked in the following locations:
 Configuration sources now live in `configs/<application>/`. Recreate existing
 application symlinks using the paths above (back up real files before replacing them).
 The old flat paths and palette compatibility links in `configs/` have been removed.
-Copy and configure `zsh/local.zsh.example` before reloading Zsh: tool initialization
+Copy and configure `configs/zsh/local.zsh.example` before reloading Zsh: tool initialization
 previously embedded in `.zshrc` now belongs to the device-local file.
 
 Palettes have one canonical source in `theme/resources/<application>/`.
@@ -168,7 +174,8 @@ state to follow dark/light changes. These generated files are not duplicate sour
 On Ubuntu, `theme install` builds the engine and the portal backend and enables the
 `theme-sync` systemd user service; `theme install --manual` installs the engine
 without a service for manual `theme dark`/`theme light` switching (also on macOS).
-Without the engine, terminals fall back to their built-in colors and WezTerm to Moon.
+Without the engine, terminals fall back to their built-in colors. WezTerm uses Moon
+only while the installed bridge exists without a published theme (e.g. after uninstall).
 
 ## Prerequisites
 
@@ -182,7 +189,8 @@ Without the engine, terminals fall back to their built-in colors and WezTerm to 
 The shared Zsh config initializes completion, optional Oh My Zsh plugins, aliases
 and the ANSI prompt. It does not discover Homebrew, alter library paths or start SDKs.
 `ls` uses eza only when it is installed; otherwise the system command stays available.
-`EDITOR` defaults to `nvim` when installed, otherwise `vim`.
+`EDITOR` defaults to `nvim` when installed, otherwise `vim`, otherwise `vi`; the config-editing
+aliases open `$EDITOR`.
 The default plugins are `z`, `sudo`, `zsh-autosuggestions` and `zsh-syntax-highlighting`;
 the Oh My Zsh `git` plugin is omitted because `aliases.zsh` defines its own Git aliases.
 Path entries are deduplicated.
@@ -190,8 +198,10 @@ Path entries are deduplicated.
 Copy `configs/zsh/local.zsh.example` to
 `${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh` and uncomment the settings this
 machine needs. It loads after the Powerlevel10k instant prompt and before framework
-setup, and contains examples for Homebrew, user executable paths, NVM, Bun, SDKMAN,
-editor and plugin preferences.
+setup, and contains examples for Homebrew, user executable paths, NVM, Bun,
+editor and plugin preferences. Setup that registers completions, such as SDKMAN,
+belongs in `local.after.zsh` (see `configs/zsh/local.after.zsh.example`), which loads
+after the framework; loaded earlier, such scripts run a second `compinit`.
 On Ubuntu, use native packages and user paths; Homebrew is optional. Ubuntu's
 `/etc/zsh/zshrc` runs `compinit` before Oh My Zsh does it again; skip the first call:
 
@@ -209,7 +219,8 @@ remain local and are preserved by its installer.
 The keyboard-layout indicator reads macOS input sources, GNOME `input-sources` (`gsettings`), KDE
 (`org.kde.keyboard` over `gdbus`) or X11 (`xkb-switch`, else `setxkbmap` with `xset`). Tmux hides it when the
 script prints nothing at startup, e.g. over SSH or without a graphical session.
-Check shell portability with `bash shell/tests/portability.sh`.
+On macOS the indicator maps input sources such as `ABC`, `U.S.`, `RussianWin` or `Ukrainian-PC`
+to the same `EN`/`RU`/`UA` codes. Check shell portability with `bash shell/tests/portability.sh`.
 
 ### Optional Terminal Emulators
 
@@ -224,14 +235,14 @@ Check shell portability with `bash shell/tests/portability.sh`.
 
 ### Zsh Plugins (installed via Oh My Zsh)
 
-The `.zshrc` includes several plugins that enhance the shell experience:
+The default list enables only plugins that are installed:
 
-- `zsh-autosuggestions` — Command suggestions
-- `zsh-syntax-highlighting` — Syntax highlighting
-- `fzf` — Fuzzy finder integration
-- `git` — Git aliases and functions
-- `nvm` — Node Version Manager integration
-- `npm`, `bun`, `docker`, `direnv`, `extract`, `sudo`, and more (see `.zshrc` for full list)
+- `z` — Directory jumping
+- `sudo` — Prefix the previous command with `sudo`
+- `zsh-autosuggestions` — Command suggestions (custom plugin, clone into `$ZSH_CUSTOM/plugins`)
+- `zsh-syntax-highlighting` — Syntax highlighting (custom plugin, clone into `$ZSH_CUSTOM/plugins`)
+
+Set `plugins=(...)` in `local.zsh` for more, e.g. `fzf`, `npm`, `bun`, `docker` or `direnv`.
 
 ## Features
 
@@ -249,23 +260,22 @@ The `.zshrc` includes several plugins that enhance the shell experience:
   - `prefix + Shift + h/l` — swap window left/right
   - `prefix + x/X/Q` — kill pane/window/session
 - **Powerline-style status bar** with session, layout, CPU/RAM, battery, and time widgets
-- **TokyoNight Moon** color scheme
+- **TokyoNight Moon/Day** palette selected by the theme engine
 
 ### Aliases & Functions
 
 The configuration includes numerous aliases for:
 
-- Git operations (`gs`, `ga`, `gc`, `gcom`, etc.)
-- Navigation (`ls` with `eza`, directory shortcuts)
-- Development tools (npm, docker, etc.)
-- AI coding agent providers (`deepseek`, `zai`, `minimax`, `kimic`)
+- Git operations (`gs`, `ga`, `gc`, `gst`, etc.)
+- Listing (`ls`/`ls2` with `eza` when installed)
+- Opening configurations in `$EDITOR` (`zsho`, `tmux.conf`, `ghostty.conf`, `zshlocal`, etc.)
+- Tmux and NVM shortcuts (`renum`, `nvmc`, `nvml`)
 
 ### Custom Functions
 
 - `theme` — Select auto/dark/light, install, inspect and reconcile shared theming
 - `yy()` — Yazi file manager integration
 - `gcom()` — Smart git checkout `master`/`main`
-- `hurl_pretty()` — Pretty-printed HTTP responses
 - `ts3()` — Tmux three-pane development layout
 
 ## License

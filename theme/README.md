@@ -18,8 +18,8 @@ theme status                  # backend, service, policy, mode and per-adapter d
 theme uninstall               # stop service; keep preference and last palettes
 ```
 
-Installation needs Go >= 1.27 (on Ubuntu: `sudo snap install go --classic`); on
-macOS also Apple Command Line Tools. The only Go dependency, `godbus/dbus` for the
+Installation needs Go 1.27+, or Go 1.21+ which downloads the 1.27 toolchain
+declared in `go.mod` (e.g. Ubuntu's `golang-go`); on macOS also Apple Command Line Tools. The only Go dependency, `godbus/dbus` for the
 Linux backend, is pinned in `go.mod`/`go.sum`. Neither installation nor tests require Python.
 
 ### Manual mode
@@ -29,12 +29,15 @@ service, on macOS and Linux. `theme dark` and `theme light` apply every adapter,
 including the Ghostty reload; `theme auto` is rejected without changing the
 preference. A persisted `auto` becomes the current effective mode during
 installation, and the palettes are published immediately. Running `theme install`
-later switches to automatic mode; `--manual` again removes the service and backend.
+later restores the service and backend and, if manual installation replaced `auto`,
+restores `auto` as well; `--manual` again removes the service and backend.
+Automatic installation first checks that the system backend can read the appearance
+and otherwise fails without changing the current installation.
 Reload existing terminal configurations once when
 migrating from independent appearance selection. Existing Neovim instances
 already observing `mode` need no migration. Reinstall after moving dotfiles or
-changing the config root. The original shell command and resource paths remain
-compatibility wrappers/symlinks.
+changing the config root. `shell/theme-switch.sh` remains a compatibility wrapper
+for the original shell command; former resource symlinks have been removed.
 
 Manual overrides survive system appearance changes, service restarts and login.
 CLI switches also work with the service stopped. Continuous automatic updates
@@ -78,8 +81,11 @@ search path, independent of a custom `XDG_CONFIG_HOME`).
 CLI and daemon use the same file lock and reread preference under that lock.
 Outputs are replaced atomically; unchanged content is not rewritten. Legacy
 symlinks are replaced without modifying their targets. A failing adapter does
-not block publication or other adapters. Failed reloads retry even if the file
-already has the desired bytes. `sync` explicitly requests reapplication.
+not block publication or other adapters. Failed reloads retry every second even if
+the file already has the desired bytes; while healthy, the daemon reacts to backend
+events and otherwise rechecks reload targets (new tmux servers or Ghostty processes)
+every 30 seconds, since applications read the published files at startup.
+`sync` explicitly requests reapplication.
 
 If an automatic backend fails, the engine keeps the last valid effective mode,
 using dark only on a cold start without valid state. Manual modes do not require
@@ -189,6 +195,9 @@ theme/tests/linux.sh          # THEME_LINUX_BASE=<image> overrides ubuntu:24.04
 # The previous test entrypoint delegates to the same suite:
 shell/tests/theme-sync.sh
 ```
+
+`run.sh` needs Go, zsh and Lua or Neovim; Docker is optional. The race detector is
+used when cgo and a C compiler are available (on Ubuntu: `build-essential`).
 
 The suite covers policy persistence, CLI/daemon concurrency, atomic publication,
 symlink safety, honest status for corrupt state, canceled requests, late helper replies,

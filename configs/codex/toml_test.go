@@ -71,3 +71,21 @@ func TestEditPreservesUnchangedBytes(t *testing.T) {
 		t.Fatalf("insertion: %s", added)
 	}
 }
+
+func TestRemovalDropsEmptiedLine(t *testing.T) {
+	before := []byte("model = 'old'\n\neffort = 'medium'\nkeep = 1 # note\nlocal = 2\n")
+	result, err := editTOML(before, []string{"model"}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(result) != "\neffort = 'medium'\nkeep = 1 # note\nlocal = 2\n" {
+		t.Fatalf("unexpected removal:\n%q", result)
+	}
+	result, err = editTOML(result, []string{"keep"}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(result) != "\neffort = 'medium'\n # note\nlocal = 2\n" {
+		t.Fatalf("comment not retained:\n%q", result)
+	}
+}

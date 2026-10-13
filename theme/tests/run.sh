@@ -5,18 +5,25 @@ root_directory="$(dirname "$source_directory")"
 test_directory="$(mktemp -d "${TMPDIR:-/tmp}/theme-tests.XXXXXX")"
 trap 'rm -rf "$test_directory"' EXIT
 export GOCACHE="${GOCACHE:-$test_directory/go-cache}"
-(cd "$source_directory" && go test -race ./... && go vet ./... && GOOS=linux GOARCH=amd64 go build -o "$test_directory/theme-linux" ./cmd/theme && GOOS=linux GOARCH=amd64 go build -o "$test_directory/install-linux" ./cmd/theme-install && GOOS=linux GOARCH=amd64 go build -o "$test_directory/linux-backend" ./backends/linux && GOOS=linux go vet ./...)
+# The race detector needs cgo and a C compiler, absent on a stock Ubuntu.
+race=()
+if [[ "$(cd "$source_directory" && go env CGO_ENABLED)" == 1 ]] && command -v "$(cd "$source_directory" && go env CC)" >/dev/null; then
+  race=(-race)
+else
+  echo 'C compiler unavailable; running Go tests without -race'
+fi
+(cd "$source_directory" && go test ${race[@]+"${race[@]}"} ./... && go vet ./... && GOOS=linux GOARCH=amd64 go build -o "$test_directory/theme-linux" ./cmd/theme && GOOS=linux GOARCH=amd64 go build -o "$test_directory/install-linux" ./cmd/theme-install && GOOS=linux GOARCH=amd64 go build -o "$test_directory/linux-backend" ./backends/linux && GOOS=linux go vet ./...)
 for script in "$source_directory/theme" "$source_directory/install.sh" "$source_directory/tests/"*.sh "$root_directory/shell/theme-switch.sh" "$root_directory/shell/tests/theme-sync.sh"; do
   bash -n "$script"
 done
-for config in "$root_directory/configs/zsh/aliases.zsh" "$root_directory/configs/zsh/.zshrc" "$root_directory/configs/zsh/functions.zsh" "$root_directory/configs/zsh/local.zsh.example" "$source_directory/resources/p10k/"*.zsh "$source_directory/completions/_theme"; do
+for config in "$root_directory/configs/zsh/aliases.zsh" "$root_directory/configs/zsh/.zshrc" "$root_directory/configs/zsh/functions.zsh" "$root_directory/configs/zsh/local.zsh.example" "$root_directory/configs/zsh/local.after.zsh.example" "$source_directory/resources/p10k/"*.zsh "$source_directory/completions/_theme"; do
   zsh -n "$config"
 done
 if DOTFILES="$root_directory" zsh -c 'source "$DOTFILES/configs/zsh/aliases.zsh"; theme invalid' >/dev/null 2>&1; then
   echo 'Invalid theme command incorrectly succeeded' >&2
   exit 1
 fi
-if rg -n '#[[:xdigit:]]{6}' "$source_directory/resources/p10k/p10k.zsh"; then
+if grep -nE '#[[:xdigit:]]{6}' "$source_directory/resources/p10k/p10k.zsh"; then
   echo 'ANSI prompt contains fixed RGB colors' >&2
   exit 1
 fi

@@ -145,10 +145,12 @@ func (e *Engine) Watch(ctx context.Context) {
 	go e.Backend.Watch(ctx, events)
 	mode, err := e.Backend.Read(ctx)
 	system := System{Mode: mode, Err: err}
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(RetryInterval)
 	defer ticker.Stop()
 	lastError := ""
+	var lastUpdate time.Time
 	update := func() {
+		lastUpdate = time.Now()
 		_, err := e.Reconcile(ctx, "", &system, false)
 		message := ""
 		if err != nil {
@@ -180,7 +182,10 @@ func (e *Engine) Watch(ctx context.Context) {
 			}
 			update()
 		case <-ticker.C:
-			update()
+			// Retry failures promptly; otherwise only a periodic health check.
+			if lastError != "" || time.Since(lastUpdate) >= HealthInterval {
+				update()
+			}
 		}
 	}
 }

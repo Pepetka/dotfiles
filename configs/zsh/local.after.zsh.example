@@ -1,0 +1,10 @@
+# Copy to ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.after.zsh.
+# Loaded after Oh My Zsh/compinit, aliases and functions: initialization that
+# registers completions goes here, so it does not start a second compinit.
+
+# SDKMAN
+# export SDKMAN_DIR="$HOME/.sdkman"
+# [[ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] || source "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+# Bun without the Oh My Zsh bun plugin
+# [[ ! -s "$BUN_INSTALL/_bun" ]] || source "$BUN_INSTALL/_bun"

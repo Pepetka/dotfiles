@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -325,5 +326,48 @@ func TestManualModeWithoutBackend(t *testing.T) {
 	NoBackend{}.Watch(ctx, events)
 	if event := <-events; !errors.Is(event.Err, ErrNoBackend) {
 		t.Fatalf("watch without backend: %+v", event)
+	}
+}
+
+type countingAdapter struct {
+	applies atomic.Int32
+	fail    atomic.Bool
+}
+
+func (*countingAdapter) Name() string                            { return "counting" }
+func (*countingAdapter) Render(Config, Mode) ([]Artifact, error) { return nil, nil }
+func (a *countingAdapter) Apply(context.Context, Config, ApplyRequest) (AdapterState, error) {
+	a.applies.Add(1)
+	if a.fail.Load() {
+		return AdapterState{}, errors.New("reload failed")
+	}
+	return AdapterState{State: "applied"}, nil
+}
+
+func TestWatchRetriesFailuresAndThrottlesHealthyChecks(t *testing.T) {
+	retry, health := RetryInterval, HealthInterval
+	RetryInterval, HealthInterval = 20*time.Millisecond, time.Hour
+	defer func() { RetryInterval, HealthInterval = retry, health }()
+	e := newEngine(t)
+	adapter := &countingAdapter{}
+	adapter.fail.Store(true)
+	e.Adapters = []Adapter{adapter}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { e.Watch(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+	deadline := time.Now().Add(2 * time.Second)
+	for adapter.applies.Load() < 5 {
+		if time.Now().After(deadline) {
+			t.Fatal("failed reload was not retried")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	adapter.fail.Store(false)
+	time.Sleep(100 * time.Millisecond)
+	settled := adapter.applies.Load()
+	time.Sleep(200 * time.Millisecond)
+	if adapter.applies.Load() != settled {
+		t.Fatal("healthy daemon kept reapplying on every tick")
 	}
 }

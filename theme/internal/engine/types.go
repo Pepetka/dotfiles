@@ -113,3 +113,10 @@ func DefaultDirectory() string {
 }
 
 const CommandTimeout = 3 * time.Second
+
+// Applications read the published files at startup, so a healthy daemon only
+// rechecks reload targets periodically; failures are retried every second.
+var (
+	RetryInterval  = time.Second
+	HealthInterval = 30 * time.Second
+)

@@ -1,7 +1,9 @@
 # Copy to ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh.
 # Uncomment only what this machine uses. Loaded after the instant prompt, before Oh My Zsh;
 # keep it silent: console output here triggers a Powerlevel10k warning.
-# Keep secrets in the adjacent secrets.zsh, outside Git.
+# Keep secrets in the adjacent secrets.zsh, outside Git. Scripts that register
+# completions (they run compinit themselves if loaded earlier) belong in
+# local.after.zsh; see local.after.zsh.example.
 
 # Shell preferences
 # export EDITOR=nvim
@@ -26,16 +28,13 @@
 # export NVM_DIR="$HOME/.nvm"
 # [[ ! -s "$NVM_DIR/nvm.sh" ]] || source "$NVM_DIR/nvm.sh"
 
-# Bun
+# Bun: completions come from the Oh My Zsh bun plugin.
 # export BUN_INSTALL="$HOME/.bun"
 # path=("$BUN_INSTALL/bin" $path)
-# [[ ! -s "$BUN_INSTALL/_bun" ]] || source "$BUN_INSTALL/_bun"
 
 # Other tools
 # path=("$HOME/.kimi-code/bin" $path)
 # [[ ! -r "$HOME/.local/bin/env" ]] || source "$HOME/.local/bin/env"
 # path+=(/Applications/WezTerm.app/Contents/MacOS) # macOS only
 
-# SDKMAN
-# export SDKMAN_DIR="$HOME/.sdkman"
-# [[ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] || source "$SDKMAN_DIR/bin/sdkman-init.sh"
+# SDKMAN: initialize it in local.after.zsh.
