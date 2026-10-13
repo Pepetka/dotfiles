@@ -175,8 +175,7 @@ unhighlighted files, independently of custom syntax scope overrides.
 
 For Codex, link `resources/codex/Tokyo Night Moon.tmTheme` and
 `resources/codex/Tokyo Night Day.tmTheme` into `$CODEX_HOME/themes`
-(default `~/.codex/themes`), or use the [Codex installer](../configs/codex/README.md)
-to install themes together with shared settings and profiles. Choose a theme with
+(default `~/.codex/themes`). Choose a theme with
 `/theme`. Neutral text and ordinary code backgrounds inherit the terminal colors.
 Added and removed diff lines use subtle green and red backgrounds matched to
 each variant. Codex persists your selection to

@@ -45,8 +45,9 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 ### AI CLI
 
-- **[configs/codex/](configs/codex/README.md)** — Portable Codex preferences, work/deep/review profiles,
-  and a three-way installer that preserves local state and manual theme selection
+- **[configs/agents/](configs/agents/)** — Shared global instructions (`AGENTS.md`, linked to
+  `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`) and skills, linked by `link-skills.sh`
+- **[configs/codex/](configs/codex/README.md)** — Reference copy of portable Codex preferences, updated manually
 
 ## Screenshots
 
@@ -140,7 +141,14 @@ Files should be placed/symlinked in the following locations:
    # Tmux
    ln -s "$DOTFILES/configs/tmux/tmux.conf" "$HOME/.tmux.conf"
    ln -s "$DOTFILES/shell/keyboard.sh" "$HOME/.tmux/keyboard.sh"
+
+   # AI agents: shared instructions and skills
+   ln -s "$DOTFILES/configs/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+   ln -s "$DOTFILES/configs/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+   sh "$DOTFILES/configs/agents/link-skills.sh"
    ```
+
+   Rerun `link-skills.sh` after adding a skill to `configs/agents/skills` or installing one into `~/.agents/skills`.
 
    Aliases are sourced directly from `$DOTFILES/configs/zsh/aliases.zsh` in `.zshrc`, so no separate symlink is needed.
    `.zshrc` derives `DOTFILES` from its symlink target; the checkout may live anywhere.
@@ -150,9 +158,6 @@ Files should be placed/symlinked in the following locations:
 4. Run `"$DOTFILES/theme/theme" install` to build the engine, publish the palettes and start the service
    (`--manual` without a service, e.g. in WSL or containers). On macOS, then run
    `"$DOTFILES/theme/theme" authorize` with Ghostty open.
-
-   For Codex, run `sh "$DOTFILES/configs/codex/install.sh" --dry-run`, then `sh "$DOTFILES/configs/codex/install.sh"`.
-   See [Codex configuration](configs/codex/README.md) for update behavior and profiles.
 
 5. Install Tmux plugins:
    - Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm)
@@ -214,7 +219,7 @@ Alacritty's `SimpleFullscreen` startup mode is macOS-only; on Linux the window o
 windowed.
 Keep API keys in `zsh/secrets.zsh` under the same config root, outside Git.
 Codex authentication, trusted projects and device-specific MCP configuration
-remain local and are preserved by its installer.
+remain local; `configs/codex/config.toml` is only a reference for manual comparison.
 
 The keyboard-layout indicator reads macOS input sources, GNOME `input-sources` (`gsettings`), KDE
 (`org.kde.keyboard` over `gdbus`) or X11 (`xkb-switch`, else `setxkbmap` with `xset`). Tmux hides it when the

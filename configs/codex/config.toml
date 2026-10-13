@@ -1,4 +1,4 @@
-# Portable preferences. Local trust, onboarding state and machine MCPs stay local.
+# Reference copy for manual comparison. Local trust, onboarding state and machine MCPs stay local.
 model_reasoning_effort = "medium"
 plan_mode_reasoning_effort = "xhigh"
 
@@ -13,7 +13,6 @@ network_access = true
 memories = true
 
 [tui]
-# Initial choice only: installation preserves subsequent manual theme selection.
 theme = "Tokyo Night Moon"
 status_line = ["model-with-reasoning", "context-used", "five-hour-limit", "weekly-limit"]
 vim_mode_default = true
