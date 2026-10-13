@@ -137,16 +137,9 @@ run_zsh -c '
 ' >"$test_directory/custom.log" 2>&1
 [[ ! -s "$test_directory/custom.log" ]]
 [[ ! -e "$test_directory/probed" ]]
-# The optional macOS widget stays silent without macOS tools.
-[[ -z "$(env -i HOME="$test_home" PATH="$test_directory/bin" /bin/bash "$source_directory/shell/keyboard.sh")" ]]
-cat >"$test_directory/bin/defaults" <<'SH'
-#!/bin/sh
-printf '%s\n' '"KeyboardLayout Name" = "ABC";'
-SH
-chmod 700 "$test_directory/bin/defaults"
-[[ "$(env -i HOME="$test_home" PATH="$test_directory/bin:/usr/bin:/bin" /bin/bash "$source_directory/shell/keyboard.sh")" == EN ]]
 echo 'Portable Zsh config passed: relocated repo, symlinks/spaces, XDG, missing tools, explicit local setup, optional plugins and repeated sourcing'
 
+bash "$source_directory/shell/tests/keyboard.sh"
 if command -v lua >/dev/null; then
   lua "$source_directory/shell/tests/terminals.lua" "$source_directory" "$config_root"
 elif command -v nvim >/dev/null; then

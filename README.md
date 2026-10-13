@@ -33,7 +33,8 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 - **`theme/theme`** — Theme engine command; `shell/theme-switch.sh` remains a compatibility wrapper
 - **`theme/`** — Portable Go engine, macOS backend, application adapters and resources
-- **`shell/keyboard.sh`** — macOS input source indicator used by the Tmux status bar (shows `RU`/`EN`/etc.)
+- **`shell/keyboard.sh`** — Keyboard layout indicator for the Tmux status bar (`RU`/`EN`/etc.) on macOS and
+  Linux (GNOME, KDE, X11)
 
 ### Editor
 
@@ -205,7 +206,9 @@ Keep API keys in `zsh/secrets.zsh` under the same config root, outside Git.
 Codex authentication, trusted projects and device-specific MCP configuration
 remain local and are preserved by its installer.
 
-The keyboard-layout indicator uses macOS APIs and is hidden in tmux on Linux.
+The keyboard-layout indicator reads macOS input sources, GNOME `input-sources` (`gsettings`), KDE
+(`org.kde.keyboard` over `gdbus`) or X11 (`xkb-switch`, else `setxkbmap` with `xset`). Tmux hides it when the
+script prints nothing at startup, e.g. over SSH or without a graphical session.
 Check shell portability with `bash shell/tests/portability.sh`.
 
 ### Optional Terminal Emulators
