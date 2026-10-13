@@ -47,6 +47,7 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 - **[configs/agents/](configs/agents/)** — Shared global instructions (`AGENTS.md`, linked to
   `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`) and skills, linked by `link-skills.sh`
+- **[configs/claude/](configs/claude/README.md)** — Reference copy of Claude Code settings, status line and portable MCP servers
 - **[configs/codex/](configs/codex/README.md)** — Reference copy of portable Codex preferences, updated manually
 
 ## Screenshots
@@ -146,7 +147,11 @@ Files should be placed/symlinked in the following locations:
    ln -s "$DOTFILES/configs/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
    ln -s "$DOTFILES/configs/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
    sh "$DOTFILES/configs/agents/link-skills.sh"
+   ln -s "$DOTFILES/configs/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
    ```
+
+   Copy `configs/claude/settings.json` to `~/.claude/settings.json` and add MCP servers as described in
+   [Claude Code configuration](configs/claude/README.md).
 
    Rerun `link-skills.sh` after adding a skill to `configs/agents/skills` or installing one into `~/.agents/skills`.
 
