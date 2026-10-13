@@ -27,6 +27,7 @@
 # NVM (omit the Oh My Zsh nvm plugin when initializing it here).
 # export NVM_DIR="$HOME/.nvm"
 # [[ ! -s "$NVM_DIR/nvm.sh" ]] || source "$NVM_DIR/nvm.sh"
+# [[ -z "$NVM_BIN" ]] || path=("$NVM_BIN" $path)
 
 # Bun: completions come from the Oh My Zsh bun plugin.
 # export BUN_INSTALL="$HOME/.bun"
