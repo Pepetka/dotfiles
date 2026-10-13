@@ -82,6 +82,11 @@ func ghosttyRequest(ctx context.Context, c engine.Config, command string, launch
 }
 
 func (Ghostty) Apply(ctx context.Context, c engine.Config, r engine.ApplyRequest) (engine.AdapterState, error) {
+	if runtime.GOOS == "linux" {
+		return applyLinuxGhostty(r, func(args ...string) (string, error) {
+			return engine.Run(ctx, "systemctl", append([]string{"--user"}, args...)...)
+		})
+	}
 	if runtime.GOOS != "darwin" {
 		return engine.AdapterState{State: "published", Mode: r.Mode}, nil
 	}
@@ -114,4 +119,28 @@ func applyGhostty(r engine.ApplyRequest, identity string, reload func() (string,
 		}
 	}
 	return engine.AdapterState{State: "reload requested", Mode: r.Mode, Identity: identity}, nil
+}
+
+const ghosttyUnit = "app-com.mitchellh.ghostty.service"
+
+// On Linux, Ghostty's own systemd unit maps reload to SIGUSR2 for its main
+// process. Signalling Ghostty directly is unsafe: versions without a handler
+// terminate on SIGUSR2. Instances outside the unit keep the published file.
+func applyLinuxGhostty(r engine.ApplyRequest, systemctl func(...string) (string, error)) (engine.AdapterState, error) {
+	output, err := systemctl("show", "--property=ActiveState,MainPID,CanReload", ghosttyUnit)
+	properties := make(map[string]string)
+	for _, line := range strings.Split(output, "\n") {
+		if name, value, ok := strings.Cut(strings.TrimSpace(line), "="); ok {
+			properties[name] = value
+		}
+	}
+	if err != nil || properties["ActiveState"] != "active" || properties["CanReload"] != "yes" || properties["MainPID"] == "0" {
+		return engine.AdapterState{State: "published", Mode: r.Mode}, nil
+	}
+	return applyGhostty(r, properties["MainPID"], func() (string, error) {
+		if output, err := systemctl("reload", ghosttyUnit); err != nil {
+			return "", fmt.Errorf("Ghostty reload: %w: %s", err, strings.TrimSpace(output))
+		}
+		return "reload requested", nil
+	})
 }

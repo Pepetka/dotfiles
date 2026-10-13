@@ -1,12 +1,11 @@
-// Package install owns macOS service installation, independently of theme policy.
+// Package install owns engine and service installation, independently of theme policy.
 package install
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"dotfiles/theme/internal/engine"
+	"dotfiles/theme/internal/service"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
@@ -16,11 +15,17 @@ import (
 	"strings"
 )
 
-const label = "com.vlvkuznetsov.theme-sync"
+const usage = "usage: theme {install [--manual | --backend PATH]|uninstall}"
 
-var artifacts = []string{"theme-sync", "macos-backend", "engine.json", ".platform-source.sha256", "wezterm-bridge.lua", "Theme Automation.app"}
+// Every artifact any platform or mode may install; switching modes removes the
+// ones the new build does not provide.
+var artifacts = []string{"theme-sync", "macos-backend", "linux-backend", "engine.json", ".platform-source.sha256", "wezterm-bridge.lua", "Theme Automation.app"}
 
-type installer struct{ source, root, directory, home, domain, plist string }
+type installer struct {
+	source, root, directory string
+	manual                  bool
+	service                 service.Manager
+}
 
 func command(directory, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
@@ -34,7 +39,7 @@ func command(directory, name string, args ...string) error {
 
 func exists(path string) bool { _, err := os.Lstat(path); return err == nil }
 func copyPath(source, target string) error {
-	// Native cp preserves signed bundle metadata and symlinks, including dangling prompt links.
+	// Native cp preserves signed bundle metadata and symlinks.
 	return command("", "cp", "-pPR", source, target)
 }
 
@@ -60,38 +65,30 @@ func fingerprint(source string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-func servicePlist(directory string) []byte {
-	escape := func(s string) string { var b bytes.Buffer; _ = xml.EscapeText(&b, []byte(s)); return b.String() }
-	var args strings.Builder
-	for _, value := range []string{filepath.Join(directory, "theme-sync"), "watch", "--theme-dir", directory} {
-		fmt.Fprintf(&args, "<string>%s</string>", escape(value))
+func platformService() (string, error) {
+	switch runtime.GOOS {
+	case "darwin":
+		return "launchd", nil
+	case "linux":
+		return "systemd", nil
 	}
-	return []byte(fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>Label</key><string>%s</string>
-<key>ProgramArguments</key><array>%s</array>
-<key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
-<key>ThrottleInterval</key><integer>5</integer>
-<key>LimitLoadToSessionType</key><string>Aqua</string>
-<key>ProcessType</key><string>Background</string>
-<key>StandardErrorPath</key><string>%s</string>
-</dict></plist>
-`, label, args.String(), escape(filepath.Join(directory, "service.log"))))
+	return "", fmt.Errorf("theme installation is not supported on %s", runtime.GOOS)
+}
+
+func platformBackend() string {
+	return map[string]string{"darwin": "macos-backend", "linux": "linux-backend"}[runtime.GOOS]
 }
 
 func Execute(source string, args []string) error {
-	if runtime.GOOS != "darwin" {
-		return errors.New("this service installer requires macOS")
-	}
 	if len(args) == 0 || (args[0] != "install" && args[0] != "uninstall") {
-		return errors.New("usage: theme {install [--backend PATH]|uninstall}")
+		return errors.New(usage)
 	}
-	backend := ""
-	if len(args) != 1 {
-		if args[0] != "install" || len(args) != 3 || args[1] != "--backend" {
-			return errors.New("usage: theme install [--backend PATH]")
-		}
+	backend, manual := "", false
+	switch {
+	case len(args) == 1:
+	case args[0] == "install" && len(args) == 2 && args[1] == "--manual":
+		manual = true
+	case args[0] == "install" && len(args) == 3 && args[1] == "--backend":
 		var err error
 		backend, err = filepath.Abs(args[2])
 		if err != nil {
@@ -104,8 +101,14 @@ func Execute(source string, args []string) error {
 		if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
 			return fmt.Errorf("backend is not executable: %s", backend)
 		}
+	default:
+		return errors.New(usage)
 	}
-	source, err := filepath.Abs(source)
+	name, err := platformService()
+	if err != nil {
+		return err
+	}
+	source, err = filepath.Abs(source)
 	if err != nil {
 		return err
 	}
@@ -125,58 +128,46 @@ func Execute(source string, args []string) error {
 	if err != nil {
 		return err
 	}
-	i := installer{
-		source: source, root: root, directory: directory, home: home,
-		domain: fmt.Sprintf("gui/%d", os.Getuid()), plist: filepath.Join(home, "Library/LaunchAgents", label+".plist"),
+	manager, err := service.New(name, home)
+	if err != nil {
+		return err
 	}
+	i := installer{source: source, root: root, directory: directory, manual: manual, service: manager}
 	if args[0] == "uninstall" {
-		_ = i.launch("bootout", i.domain+"/"+label)
-		for _, name := range artifacts {
-			if name == "wezterm-bridge.lua" {
-				continue
-			}
-			if err := os.RemoveAll(filepath.Join(directory, name)); err != nil {
-				return err
-			}
-		}
-		if err := os.RemoveAll(i.plist); err != nil {
-			return err
-		}
-		fmt.Println("Theme service removed; preference, last palettes and prompt retained.")
-		return nil
+		return i.uninstall()
 	}
 	return i.install(backend)
 }
 
-func (i installer) launch(args ...string) error {
-	cmd := exec.Command("launchctl", args...)
-	data, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("launchctl %s: %w: %s", strings.Join(args, " "), err, data)
-	}
-	return nil
-}
-
-func (i installer) install(backend string) error {
-	for _, path := range []string{i.directory, filepath.Dir(i.plist)} {
-		if err := os.MkdirAll(path, 0700); err != nil {
+func (i installer) uninstall() error {
+	for _, name := range artifacts {
+		if name == "wezterm-bridge.lua" {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(i.directory, name)); err != nil {
 			return err
 		}
 	}
-	build, err := os.MkdirTemp(i.directory, ".install.")
-	if err != nil {
+	if err := os.RemoveAll(i.service.Path()); err != nil {
 		return err
 	}
-	defer os.RemoveAll(build)
+	i.service.Stop()
+	fmt.Println("Theme engine removed; preference and last palettes retained.")
+	return nil
+}
+
+func (i installer) buildMacOS(build string) error {
 	path := func(name string) string { return filepath.Join(build, name) }
-	if err := command(i.source, "go", "build", "-trimpath", "-o", path("theme-sync"), "./cmd/theme"); err != nil {
-		return err
-	}
 	swift := func(source, target string) error {
 		return command("", "xcrun", "swiftc", "-module-cache-path", path("module-cache"), "-parse-as-library", "-O", filepath.Join(i.source, source), "-o", target)
 	}
-	if err := swift("backends/macos/main.swift", path("macos-backend")); err != nil {
-		return err
+	if !i.manual {
+		if err := swift("backends/macos/main.swift", path("macos-backend")); err != nil {
+			return err
+		}
+		if err := os.Chmod(path("macos-backend"), 0700); err != nil {
+			return err
+		}
 	}
 	hash, err := fingerprint(i.source)
 	if err != nil {
@@ -207,43 +198,114 @@ func (i installer) install(backend string) error {
 	if err := command("", "codesign", "--verify", "--strict", app); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path(".platform-source.sha256"), []byte(hash+"\n"), 0600); err != nil {
+	if err := command("", "plutil", "-lint", filepath.Join(app, "Contents/Info.plist")); err != nil {
 		return err
 	}
-	for _, name := range []string{"theme-sync", "macos-backend"} {
-		if err := os.Chmod(path(name), 0700); err != nil {
-			return err
-		}
+	return os.WriteFile(path(".platform-source.sha256"), []byte(hash+"\n"), 0600)
+}
+
+func (i installer) buildLinux(build string) error {
+	if i.manual {
+		return nil
 	}
-	if backend == "" {
+	target := filepath.Join(build, "linux-backend")
+	if err := command(i.source, "go", "build", "-trimpath", "-o", target, "./backends/linux"); err != nil {
+		return err
+	}
+	return os.Chmod(target, 0700)
+}
+
+// Manual mode has no system observer, so a persisted auto policy becomes the
+// last effective mode instead of failing every later reconciliation.
+func (i installer) manualPreference() (engine.Mode, error) {
+	data, err := os.ReadFile(filepath.Join(i.directory, "preference"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+	if err == nil && strings.TrimSpace(string(data)) != string(engine.Auto) {
+		return "", nil
+	}
+	data, _ = os.ReadFile(filepath.Join(i.directory, "mode"))
+	mode, err := engine.ParseMode(string(data), false)
+	if err != nil {
+		mode = engine.Dark
+	}
+	return mode, nil
+}
+
+func (i installer) install(backend string) error {
+	if err := os.MkdirAll(i.directory, 0700); err != nil {
+		return err
+	}
+	build, err := os.MkdirTemp(i.directory, ".install.")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(build)
+	path := func(name string) string { return filepath.Join(build, name) }
+	if err := command(i.source, "go", "build", "-trimpath", "-o", path("theme-sync"), "./cmd/theme"); err != nil {
+		return err
+	}
+	if err := os.Chmod(path("theme-sync"), 0700); err != nil {
+		return err
+	}
+	helper := ""
+	if runtime.GOOS == "darwin" {
+		helper = filepath.Join(i.directory, "Theme Automation.app")
+		err = i.buildMacOS(build)
+	} else {
+		err = i.buildLinux(build)
+	}
+	if err != nil {
+		return err
+	}
+	defaultBackend := filepath.Join(i.directory, platformBackend())
+	if !i.manual && backend == "" {
 		old, err := os.ReadFile(filepath.Join(i.directory, "engine.json"))
 		if err == nil {
 			var c engine.Config
 			if err := json.Unmarshal(old, &c); err != nil {
 				return err
 			}
-			backend = c.Backend
+			// Preserve only an explicitly chosen backend, not another mode's default.
+			if c.Backend != filepath.Join(i.directory, "macos-backend") && c.Backend != filepath.Join(i.directory, "linux-backend") {
+				backend = c.Backend
+			}
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
-	}
-	if backend == "" {
-		backend = filepath.Join(i.directory, "macos-backend")
+		if backend == "" {
+			backend = defaultBackend
+		}
 	}
 	tmux, _ := exec.LookPath("tmux")
 	socketRoot := os.Getenv("TMUX_TMPDIR")
 	if socketRoot == "" {
 		socketRoot = "/tmp"
 	}
-	c := engine.Config{Root: i.root, Directory: i.directory, Backend: backend, PlatformHelper: filepath.Join(i.directory, "Theme Automation.app"), Tmux: tmux, Socket: filepath.Join(socketRoot, fmt.Sprintf("tmux-%d", os.Getuid()), "default")}
-	if err := writeJSON(path("engine.json"), c); err != nil {
-		return err
+	c := engine.Config{Root: i.root, Directory: i.directory, Backend: backend, PlatformHelper: helper, Tmux: tmux, Socket: filepath.Join(socketRoot, fmt.Sprintf("tmux-%d", os.Getuid()), "default")}
+	if !i.manual {
+		c.Service = i.service.Name()
 	}
-	if err := os.WriteFile(path("service.plist"), servicePlist(i.directory), 0600); err != nil {
+	if err := writeJSON(path("engine.json"), c); err != nil {
 		return err
 	}
 	if err := copyPath(filepath.Join(i.source, "wezterm.lua"), path("wezterm-bridge.lua")); err != nil {
 		return err
+	}
+	if !i.manual {
+		if err := os.WriteFile(path("service"), i.service.Definition(i.directory), 0600); err != nil {
+			return err
+		}
+		if err := i.service.Validate(path("service")); err != nil {
+			return err
+		}
+	}
+	preference := engine.Mode("")
+	if i.manual {
+		if preference, err = i.manualPreference(); err != nil {
+			return err
+		}
 	}
 	preflight := path("preflight")
 	if err := os.Mkdir(preflight, 0700); err != nil {
@@ -257,22 +319,43 @@ func (i installer) install(backend string) error {
 			}
 		}
 	}
+	if preference != "" {
+		if err := os.WriteFile(filepath.Join(preflight, "preference"), []byte(preference+"\n"), 0600); err != nil {
+			return err
+		}
+	}
 	c.Directory, c.Tmux, c.PlatformHelper = preflight, "", ""
-	if backend == filepath.Join(i.directory, "macos-backend") {
-		c.Backend = path("macos-backend")
+	if backend == defaultBackend {
+		c.Backend = path(platformBackend())
 	}
 	if err := writeJSON(path("preflight.json"), c); err != nil {
 		return err
 	}
-	for _, plist := range []string{path("service.plist"), filepath.Join(app, "Contents/Info.plist")} {
-		if err := command("", "plutil", "-lint", plist); err != nil {
-			return err
-		}
-	}
 	if err := command("", path("theme-sync"), "sync", "--config", path("preflight.json")); err != nil {
 		return err
 	}
-	return i.commit(build)
+	if err := i.commit(build); err != nil {
+		return err
+	}
+	if !i.manual {
+		fmt.Println("Theme engine installed with the " + i.service.Name() + " service. Reload existing terminal configs once to adopt the engine.")
+		if runtime.GOOS == "darwin" {
+			fmt.Println("For Ghostty live reload, run theme authorize with Ghostty open and allow Automation.")
+		}
+		return nil
+	}
+	if preference != "" {
+		if _, err := engine.AtomicWrite(filepath.Join(i.directory, "preference"), []byte(preference+"\n")); err != nil {
+			return err
+		}
+		fmt.Printf("Manual mode cannot follow the system; preference auto replaced with %s.\n", preference)
+	}
+	// No service publishes the palettes, so apply the current selection now.
+	if err := command("", filepath.Join(i.directory, "theme-sync"), "sync", "--theme-dir", i.directory); err != nil {
+		fmt.Fprintln(os.Stderr, "Initial synchronization reported errors; see: theme status")
+	}
+	fmt.Println("Theme engine installed in manual mode. Switch with theme dark or theme light.")
+	return nil
 }
 
 func (i installer) commit(build string) error {
@@ -288,15 +371,19 @@ func (i installer) commit(build string) error {
 			}
 		}
 	}
-	if exists(i.plist) {
-		if err := copyPath(i.plist, filepath.Join(previous, "service.plist")); err != nil {
+	definition := i.service.Path()
+	hadDefinition := exists(definition)
+	if hadDefinition {
+		if err := copyPath(definition, filepath.Join(previous, "service")); err != nil {
 			return err
 		}
 	}
-	wasLoaded := i.launch("print", i.domain+"/"+label) == nil
-	_ = i.launch("bootout", i.domain+"/"+label)
+	wasLoaded := hadDefinition && i.service.Loaded()
+	if hadDefinition || wasLoaded {
+		i.service.Stop()
+	}
 	rollback := func(cause error) error {
-		_ = i.launch("bootout", i.domain+"/"+label)
+		i.service.Stop()
 		failures := []error{cause}
 		for _, name := range artifacts {
 			target := filepath.Join(i.directory, name)
@@ -310,60 +397,50 @@ func (i installer) commit(build string) error {
 				}
 			}
 		}
-		if err := os.RemoveAll(i.plist); err != nil {
+		if err := os.RemoveAll(definition); err != nil {
 			failures = append(failures, err)
 		}
-		if exists(filepath.Join(previous, "service.plist")) {
-			if err := copyPath(filepath.Join(previous, "service.plist"), i.plist); err != nil {
+		if hadDefinition {
+			if err := copyPath(filepath.Join(previous, "service"), definition); err != nil {
 				failures = append(failures, err)
 			} else if wasLoaded {
-				if err := i.launch("bootstrap", i.domain, i.plist); err != nil {
+				if err := i.service.Start(); err != nil {
 					failures = append(failures, err)
 				}
 			}
 		}
-		return fmt.Errorf("installation failed; attempted restoration of previous service: %w", errors.Join(failures...))
+		return fmt.Errorf("installation failed; attempted restoration of the previous installation: %w", errors.Join(failures...))
 	}
 	for _, name := range artifacts {
 		target := filepath.Join(i.directory, name)
 		if err := os.RemoveAll(target); err != nil {
 			return rollback(err)
 		}
-		if err := os.Rename(filepath.Join(build, name), target); err != nil {
+		if exists(filepath.Join(build, name)) {
+			if err := os.Rename(filepath.Join(build, name), target); err != nil {
+				return rollback(err)
+			}
+		}
+	}
+	if i.manual {
+		if err := os.RemoveAll(definition); err != nil {
 			return rollback(err)
 		}
+		return nil
 	}
-	// LaunchAgents may reside on another filesystem from XDG_CONFIG_HOME.
-	plistData, err := os.ReadFile(filepath.Join(build, "service.plist"))
+	// Service definitions may reside on another filesystem from XDG_CONFIG_HOME.
+	data, err := os.ReadFile(filepath.Join(build, "service"))
 	if err != nil {
 		return rollback(err)
 	}
-	if _, err := engine.AtomicWrite(i.plist, plistData); err != nil {
+	if err := os.MkdirAll(filepath.Dir(definition), 0700); err != nil {
 		return rollback(err)
 	}
-	if err := i.launch("bootstrap", i.domain, i.plist); err != nil {
+	if _, err := engine.AtomicWrite(definition, data); err != nil {
 		return rollback(err)
 	}
-	prompt := filepath.Join(i.home, ".p10k.zsh")
-	backup := filepath.Join(i.directory, "p10k-before-install.zsh")
-	if exists(prompt) && !exists(backup) {
-		if err := copyPath(prompt, backup); err != nil {
-			return err
-		}
+	if err := i.service.Start(); err != nil {
+		return rollback(err)
 	}
-	tmp, err := os.MkdirTemp(i.home, ".theme-prompt.")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmp)
-	link := filepath.Join(tmp, "p10k.zsh")
-	if err := os.Symlink(filepath.Join(i.source, "resources/p10k/p10k.zsh"), link); err != nil {
-		return err
-	}
-	if err := os.Rename(link, prompt); err != nil {
-		return err
-	}
-	fmt.Println("Theme engine installed. Reload existing terminal configs once to adopt the engine.")
-	fmt.Println("For Ghostty live reload, run theme authorize with Ghostty open and allow Automation.")
 	return nil
 }

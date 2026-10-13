@@ -14,6 +14,8 @@ export HOME="$test_directory/home"
 export XDG_CONFIG_HOME="$test_directory/config with spaces"
 export DOTFILES="$(dirname "$source_directory")"
 export PATH="$test_directory/bin:$PATH"
+# Point the default tmux socket at an empty directory, never at the user's server.
+export TMUX_TMPDIR="$test_directory/tmux"
 cat >"$test_directory/bin/go" <<'SH'
 #!/bin/sh
 if [ "$1" = run ]; then
@@ -81,14 +83,14 @@ fi
 [[ -f "$test_directory/loaded" ]]
 "$source_directory/theme" install
 [[ "$(cat "$directory/preference")" == light ]]
-[[ "$(cat "$directory/p10k-before-install.zsh")" == original-prompt ]]
+# The prompt is sourced from the repository; installation leaves ~/.p10k.zsh alone.
+[[ "$(cat "$HOME/.p10k.zsh")" == original-prompt && ! -e "$directory/p10k-before-install.zsh" ]]
 [[ -f "$directory/wezterm-bridge.lua" ]]
 helper_before="$(shasum -a 256 "$directory/Theme Automation.app/Contents/MacOS/theme-macos")"
 compilations_before="$(rg -c 'platform/macos/main.swift' "$test_directory/swift.log")"
 "$source_directory/theme" install
 [[ "$(shasum -a 256 "$directory/Theme Automation.app/Contents/MacOS/theme-macos")" == "$helper_before" ]]
 [[ "$(rg -c 'platform/macos/main.swift' "$test_directory/swift.log")" == "$compilations_before" ]]
-[[ "$(cat "$directory/p10k-before-install.zsh")" == original-prompt ]]
 # Invalid persisted policy must fail preflight without touching the running service.
 launch_calls_before="$(wc -l <"$test_directory/launchctl.log")"
 echo broken >"$directory/preference"
@@ -120,9 +122,36 @@ plutil -convert json "$directory/engine.json"
 [[ "$(cat "$directory/mode")" == dark ]]
 "$source_directory/theme" auto
 [[ "$(cat "$directory/mode")" == light ]]
+# Manual mode removes the service and system backend but keeps the Ghostty helper;
+# auto becomes the effective mode, and later auto requests are rejected unchanged.
+plist="$HOME/Library/LaunchAgents/com.vlvkuznetsov.theme-sync.plist"
+bootstraps_before="$(rg -c bootstrap "$test_directory/launchctl.log")"
+"$source_directory/theme" install --manual
+[[ ! -f "$test_directory/loaded" && ! -e "$plist" && ! -e "$directory/macos-backend" ]]
+[[ -x "$directory/Theme Automation.app/Contents/MacOS/theme-macos" ]]
+[[ "$(rg -c bootstrap "$test_directory/launchctl.log")" == "$bootstraps_before" ]]
+[[ -z "$(plutil -extract backend raw "$directory/engine.json")" ]]
+[[ "$(cat "$directory/preference")" == light && "$(cat "$directory/mode")" == light ]]
+if "$source_directory/theme" auto; then
+  echo 'Manual mode incorrectly accepted auto' >&2
+  exit 1
+fi
+[[ "$(cat "$directory/preference")" == light ]]
+"$source_directory/theme" dark
+[[ "$(cat "$directory/mode")" == dark ]]
+"$source_directory/theme" status | rg -q '"backend": "manual"'
+# A regular installation restores the service with the platform backend.
+"$source_directory/theme" install
+[[ -f "$test_directory/loaded" && -f "$plist" ]]
+[[ "$(plutil -extract backend raw "$directory/engine.json")" == "$directory/macos-backend" ]]
+[[ "$(plutil -extract service raw "$directory/engine.json")" == launchd ]]
+plutil -replace tmux -string '' "$directory/engine.json"
+plutil -convert json "$directory/engine.json"
+"$source_directory/theme" auto
+[[ "$(cat "$directory/mode")" == light ]]
 "$source_directory/theme" uninstall
 [[ "$(cat "$directory/preference")" == auto ]]
 [[ "$(cat "$directory/mode")" == light ]]
 [[ ! -f "$directory/theme-sync" ]]
 [[ ! -f "$directory/.platform-source.sha256" ]]
-echo 'Installer passed: preflight isolation, rollback, helper identity/rebuild, XDG/spaces, prompt backup, CLI and uninstall'
+echo 'Installer passed: preflight isolation, rollback, helper identity/rebuild, XDG/spaces, manual mode, CLI and uninstall'

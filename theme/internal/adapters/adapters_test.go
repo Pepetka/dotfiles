@@ -191,3 +191,38 @@ func TestTmuxIntegration(t *testing.T) {
 		t.Fatal("new server not updated")
 	}
 }
+
+func TestLinuxGhosttyReloadThroughSystemd(t *testing.T) {
+	show, reloads := "", 0
+	systemctl := func(args ...string) (string, error) {
+		if args[0] == "reload" {
+			reloads++
+			return "", nil
+		}
+		if show == "" {
+			return "", errors.New("systemctl unavailable")
+		}
+		return show, nil
+	}
+	r := engine.ApplyRequest{Mode: engine.Dark}
+	for _, unit := range []string{"", "ActiveState=inactive\nMainPID=0\nCanReload=yes\n", "ActiveState=active\nMainPID=42\nCanReload=no\n"} {
+		show = unit
+		state, err := applyLinuxGhostty(r, systemctl)
+		if err != nil || state.State != "published" || reloads != 0 {
+			t.Fatalf("reload without a reloadable unit %q: %+v, %v", unit, state, err)
+		}
+	}
+	show = "ActiveState=active\nMainPID=42\nCanReload=yes\n"
+	state, err := applyLinuxGhostty(r, systemctl)
+	if err != nil || state.State != "reload requested" || state.Identity != "42" || reloads != 1 {
+		t.Fatalf("reload: %+v, %v", state, err)
+	}
+	r.Previous = state
+	if _, err := applyLinuxGhostty(r, systemctl); err != nil || reloads != 1 {
+		t.Fatal("healthy instance reloaded again")
+	}
+	show = "ActiveState=active\nMainPID=43\nCanReload=yes\n"
+	if _, err := applyLinuxGhostty(r, systemctl); err != nil || reloads != 2 {
+		t.Fatal("restarted instance not reloaded")
+	}
+}

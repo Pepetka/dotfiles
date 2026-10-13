@@ -303,3 +303,27 @@ func TestWatchRecoversAndReadsExternalPreference(t *testing.T) {
 	}
 	wait(Light)
 }
+
+func TestManualModeWithoutBackend(t *testing.T) {
+	e := newEngine(t)
+	e.Backend = NewBackend(e.Config)
+	if _, ok := e.Backend.(NoBackend); !ok {
+		t.Fatalf("empty backend did not select manual mode: %T", e.Backend)
+	}
+	ctx := context.Background()
+	for _, mode := range []Mode{Light, Dark} {
+		status, err := e.Reconcile(ctx, mode, nil, false)
+		if err != nil || status.Mode != mode || status.BackendError != "" {
+			t.Fatalf("manual %s: %+v, %v", mode, status, err)
+		}
+	}
+	status, err := e.Reconcile(ctx, Auto, nil, false)
+	if !errors.Is(err, ErrNoBackend) || status.Mode != Dark {
+		t.Fatalf("auto without backend did not retain the last mode: %+v, %v", status, err)
+	}
+	events := make(chan System, 1)
+	NoBackend{}.Watch(ctx, events)
+	if event := <-events; !errors.Is(event.Err, ErrNoBackend) {
+		t.Fatalf("watch without backend: %+v", event)
+	}
+}

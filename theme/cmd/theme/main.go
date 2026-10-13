@@ -4,6 +4,7 @@ import (
 	"context"
 	"dotfiles/theme/internal/adapters"
 	"dotfiles/theme/internal/engine"
+	"dotfiles/theme/internal/service"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -43,18 +44,23 @@ func execute(args []string) error {
 	if err := json.Unmarshal(data, &config); err != nil {
 		return err
 	}
-	if config.Directory == "" || config.Root == "" || config.Backend == "" {
+	if config.Directory == "" || config.Root == "" {
 		return fmt.Errorf("incomplete engine configuration")
+	}
+	// Reject before touching state, so the persisted preference stays manual.
+	if config.Manual() && (command == "auto" || command == "watch") {
+		return fmt.Errorf("theme %s: %w (installed in manual mode)", command, engine.ErrNoBackend)
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	e := engine.Engine{Config: config, Adapters: adapters.All(), Backend: engine.ExecutableBackend{Path: config.Backend}}
+	e := engine.Engine{Config: config, Adapters: adapters.All(), Backend: engine.NewBackend(config)}
 	switch command {
 	case "watch":
 		e.Watch(ctx)
 		return nil
 	case "status":
 		status, stateErr := engine.CurrentStatus(ctx, config.Directory)
+		status.Backend, status.Service = describe(config)
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		encoder.SetEscapeHTML(false)
@@ -80,6 +86,25 @@ func execute(args []string) error {
 		}
 		return err
 	}
+}
+
+func describe(c engine.Config) (string, string) {
+	if c.Manual() {
+		return "manual", "none"
+	}
+	name := c.ServiceManager()
+	if name == "" {
+		return c.Backend, "none"
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return c.Backend, name + ": " + err.Error()
+	}
+	manager, err := service.New(name, home)
+	if err != nil {
+		return c.Backend, err.Error()
+	}
+	return c.Backend, name + ": " + manager.State()
 }
 
 func main() {

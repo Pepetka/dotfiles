@@ -21,7 +21,8 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 
 ### Terminal Multiplexers
 
-- **`tmux/tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups, scratchpad, and plugins
+- **`tmux/tmux.conf`** — Tmux configuration with custom keybindings, powerline-style status bar, popups,
+  scratchpad, and plugins
 - **`theme/resources/tmux/`** — Tmux dark/light palettes using tmux user options (`@bg`, `@fg`, ...)
 
 ### Shell Prompt
@@ -57,12 +58,14 @@ For the matching Neovim configuration, see [nvim-config](https://github.com/Pepe
 ## Shared Theme Engine
 
 One engine selects TokyoNight Moon/Day for Ghostty, WezTerm, Alacritty, tmux and Neovim.
-It supports persistent manual overrides and automatic macOS appearance tracking.
+It supports persistent manual overrides and automatic appearance tracking on macOS
+and Linux (XDG Desktop Portal, e.g. Ubuntu GNOME), or a manual-only mode without a service.
 All theme sources, application adapters, palettes, tests and installation logic live in [theme/](theme/README.md).
 
 ```bash
-theme install    # requires Go >= 1.27 and Apple Command Line Tools
-theme authorize  # with Ghostty open: allow Theme Automation to reload its config
+theme install    # requires Go >= 1.27 (and Apple Command Line Tools on macOS)
+theme install --manual  # no service or system backend: dark/light only
+theme authorize  # macOS, with Ghostty open: allow Theme Automation to reload its config
 theme auto       # follow the system (default)
 theme dark       # persistent manual dark mode
 theme light      # persistent manual light mode
@@ -88,7 +91,6 @@ Files should be placed/symlinked in the following locations:
 
 ```text
 ~/.zshrc
-~/.p10k.zsh
 ~/.config/alacritty/alacritty.toml
 ~/.config/ghostty/config
 ~/.config/hunk/config.toml
@@ -162,14 +164,10 @@ The engine reads those resources directly and publishes the selected palette und
 `${XDG_CONFIG_HOME:-$HOME/.config}/theme/`; terminal configs consume that generated
 state to follow dark/light changes. These generated files are not duplicate source links.
 
-On Ubuntu, the shell and application configs can be used independently of the theme
-service. The current theme installer and automatic appearance integration remain macOS
-only. To use the matching Alacritty colors without the engine, for a static
-Linux setup, copy the desired palette from `theme/resources/alacritty/` to
-`$config_root/theme/alacritty-theme.toml`.
-Likewise copy a Ghostty or tmux palette to `theme/ghostty-theme.conf` or
-`theme/tmux-theme.conf` under your config root. WezTerm falls back to Moon when no
-bridge is installed. Linux theme-engine installation will be handled separately.
+On Ubuntu, `theme install` builds the engine and the portal backend and enables the
+`theme-sync` systemd user service; `theme install --manual` installs the engine
+without a service for manual `theme dark`/`theme light` switching (also on macOS).
+Without the engine, terminals fall back to their built-in colors and WezTerm to Moon.
 
 ## Prerequisites
 
@@ -207,8 +205,7 @@ Keep API keys in `zsh/secrets.zsh` under the same config root, outside Git.
 Codex authentication, trusted projects and device-specific MCP configuration
 remain local and are preserved by its installer.
 
-The theme service and keyboard-layout indicator currently use macOS APIs;
-automatic Linux appearance tracking still needs a separate backend/service installer.
+The keyboard-layout indicator uses macOS APIs and is hidden in tmux on Linux.
 Check shell portability with `bash shell/tests/portability.sh`.
 
 ### Optional Terminal Emulators

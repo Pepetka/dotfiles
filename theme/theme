@@ -10,20 +10,13 @@ install | uninstall)
   ;;
 auto | dark | light | sync | status | authorize)
   if [[ ! -x "$theme_directory/theme-sync" || ! -f "$theme_directory/engine.json" ]]; then
-    echo 'Theme engine is not installed. Run: theme install' >&2
+    echo 'Theme engine is not installed. Run: theme install (or theme install --manual)' >&2
     exit 1
-  fi
-  if [[ "$1" == status && "$(uname -s)" == Darwin ]]; then
-    if service_info="$(launchctl print "gui/$(id -u)/com.vlvkuznetsov.theme-sync" 2>/dev/null)"; then
-      echo "Service: $(awk '/state = / {print $3; exit}' <<<"$service_info")"
-    else
-      echo 'Service: not loaded'
-    fi
   fi
   exec "$theme_directory/theme-sync" "$1" --theme-dir "$theme_directory" "${@:2}"
   ;;
 help | -h | --help)
-  echo 'Usage: theme {auto|dark|light|sync|status|authorize|install [--backend PATH]|uninstall}'
+  echo 'Usage: theme {auto|dark|light|sync|status|authorize|install [--manual | --backend PATH]|uninstall}'
   ;;
 *)
   echo "Unknown theme command: $1" >&2

@@ -1,10 +1,8 @@
 package install
 
 import (
-	"encoding/xml"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -33,35 +31,5 @@ func TestFingerprintCompatibility(t *testing.T) {
 	changed, err := fingerprint(source)
 	if err != nil || changed == hash {
 		t.Fatalf("metadata change did not invalidate fingerprint: %s, %v", changed, err)
-	}
-}
-
-func TestServicePlistEscapesPaths(t *testing.T) {
-	directory := "/config with spaces/кириллица & <tag> \"quotes\"/theme"
-	data := servicePlist(directory)
-	var parsed struct {
-		Dict struct {
-			Keys    []string `xml:"key"`
-			Strings []string `xml:"string"`
-			Array   struct {
-				Strings []string `xml:"string"`
-			} `xml:"array"`
-			Integer int        `xml:"integer"`
-			True    []struct{} `xml:"true"`
-		} `xml:"dict"`
-	}
-	if err := xml.Unmarshal(data, &parsed); err != nil {
-		t.Fatal(err)
-	}
-	d := parsed.Dict
-	if len(d.Keys) != 8 || len(d.True) != 2 || d.Integer != 5 {
-		t.Fatalf("incorrect launch policy: %+v", d)
-	}
-	want := []string{filepath.Join(directory, "theme-sync"), "watch", "--theme-dir", directory}
-	if strings.Join(d.Array.Strings, "\x00") != strings.Join(want, "\x00") {
-		t.Fatalf("incorrect arguments: %v", d.Array.Strings)
-	}
-	if d.Strings[0] != label || d.Strings[1] != "Aqua" || d.Strings[2] != "Background" || d.Strings[3] != filepath.Join(directory, "service.log") {
-		t.Fatalf("incorrect service metadata: %v", d.Strings)
 	}
 }

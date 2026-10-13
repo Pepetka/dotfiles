@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -25,13 +26,26 @@ func ParseMode(value string, allowAuto bool) (Mode, error) {
 	return "", fmt.Errorf("invalid theme mode %q", value)
 }
 
+// An empty Backend selects manual mode: dark and light work without a service.
 type Config struct {
 	Root           string `json:"root"`
 	Directory      string `json:"directory"`
 	Backend        string `json:"backend"`
+	Service        string `json:"service,omitempty"`
 	PlatformHelper string `json:"platform_helper,omitempty"`
 	Tmux           string `json:"tmux,omitempty"`
 	Socket         string `json:"socket,omitempty"`
+}
+
+func (c Config) Manual() bool { return c.Backend == "" }
+
+// ServiceManager names the installed service; engines installed before the
+// field existed always used a macOS LaunchAgent.
+func (c Config) ServiceManager() string {
+	if c.Service == "" && !c.Manual() && runtime.GOOS == "darwin" {
+		return "launchd"
+	}
+	return c.Service
 }
 
 func (c Config) Resource(parts ...string) string {
@@ -56,6 +70,8 @@ type Status struct {
 	Preference   Mode                    `json:"preference"`
 	System       Mode                    `json:"system,omitempty"`
 	Mode         Mode                    `json:"mode"`
+	Backend      string                  `json:"backend,omitempty"`
+	Service      string                  `json:"service,omitempty"`
 	BackendError string                  `json:"backend_error,omitempty"`
 	StateError   string                  `json:"state_error,omitempty"`
 	Adapters     map[string]AdapterState `json:"adapters"`

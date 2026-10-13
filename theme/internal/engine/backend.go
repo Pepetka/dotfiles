@@ -3,6 +3,7 @@ package engine
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -11,6 +12,23 @@ import (
 type Backend interface {
 	Read(context.Context) (Mode, error)
 	Watch(context.Context, chan<- System)
+}
+
+var ErrNoBackend = errors.New("automatic mode requires a system backend; run: theme install")
+
+// NoBackend serves manual installations.
+type NoBackend struct{}
+
+func (NoBackend) Read(context.Context) (Mode, error) { return "", ErrNoBackend }
+func (NoBackend) Watch(ctx context.Context, events chan<- System) {
+	sendSystem(ctx, events, System{Err: ErrNoBackend})
+}
+
+func NewBackend(c Config) Backend {
+	if c.Manual() {
+		return NoBackend{}
+	}
+	return ExecutableBackend{Path: c.Backend}
 }
 
 type ExecutableBackend struct{ Path string }

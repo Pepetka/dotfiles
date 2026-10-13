@@ -57,7 +57,7 @@ func (WezTerm) Apply(_ context.Context, _ engine.Config, r engine.ApplyRequest) 
 }
 
 // No mode-dependent prompt configuration: emitted base ANSI colors follow the
-// terminal palette. Its source is linked once by the installer.
+// terminal palette. Zsh sources it directly from the repository.
 type Prompt struct{}
 
 func (Prompt) Name() string                                                 { return "p10k" }

@@ -2,11 +2,11 @@
 
 local -a subcmds
 subcmds=(
-  'auto:Follow system appearance'
+  'auto:Follow system appearance (requires the service)'
   'dark:Persist and apply dark mode'
   'light:Persist and apply light mode'
-  'install:Build and install the macOS theme service (--backend PATH)'
-  'uninstall:Stop the service and retain the last theme'
+  'install:Install the engine and system service (--manual, --backend PATH)'
+  'uninstall:Remove the engine and service, retaining the last theme'
   'status:Show preference, effective mode and adapter diagnostics'
   'sync:Reapply the selected theme'
   'authorize:Grant the helper permission to reload Ghostty'
