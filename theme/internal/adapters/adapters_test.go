@@ -25,7 +25,7 @@ func TestAdapterOutputs(t *testing.T) {
 	c := engine.Config{Root: sourceRoot(t)}
 	for _, mode := range []engine.Mode{engine.Dark, engine.Light} {
 		for _, adapter := range []engine.Adapter{Palette{"alacritty", "toml"}, Tmux{}, Ghostty{}, WezTerm{}} {
-			artifacts, err := adapter.Render(c, mode)
+			artifacts, err := adapter.Render(c, engine.RenderRequest{Mode: mode, Preference: mode})
 			if err != nil || len(artifacts) != 1 || len(artifacts[0].Data) == 0 {
 				t.Fatalf("%s %s: %v", adapter.Name(), mode, err)
 			}
@@ -91,6 +91,78 @@ func TestGhosttyReloadPolicy(t *testing.T) {
 	}
 }
 
+type ghosttyPolicyAdapter struct {
+	Ghostty
+	reloads int
+}
+
+func (a *ghosttyPolicyAdapter) Apply(_ context.Context, _ engine.Config, r engine.ApplyRequest) (engine.AdapterState, error) {
+	return applyGhostty(r, "42", func() (string, error) {
+		a.reloads++
+		return "reload requested", nil
+	})
+}
+
+func TestGhosttyNativeAutoAndManualOverrides(t *testing.T) {
+	c := engine.Config{Root: sourceRoot(t), Directory: filepath.Join(t.TempDir(), "config with spaces")}
+	a := &ghosttyPolicyAdapter{}
+	e := engine.Engine{Config: c, Adapters: []engine.Adapter{a}}
+	var autoFile os.FileInfo
+	for _, step := range []struct {
+		preference, system, applied engine.Mode
+		force                       bool
+		reloads                     int
+	}{
+		{engine.Auto, engine.Light, engine.Auto, false, 1},
+		{"", engine.Dark, engine.Auto, false, 1},
+		{engine.Light, engine.Dark, engine.Light, false, 2},
+		{"", engine.Light, engine.Light, false, 2},
+		{"", engine.Dark, engine.Light, false, 2},
+		{engine.Dark, engine.Light, engine.Dark, false, 3},
+		{"", engine.Dark, engine.Dark, false, 3},
+		{engine.Auto, engine.Dark, engine.Auto, false, 4},
+		{"", engine.Light, engine.Auto, false, 4},
+		{"", engine.Light, engine.Auto, true, 5},
+	} {
+		status, err := e.Reconcile(context.Background(), step.preference, &engine.System{Mode: step.system}, step.force)
+		if err != nil || a.reloads != step.reloads || status.Adapters["ghostty"].Mode != step.applied {
+			t.Fatalf("%+v: reloads=%d, status=%+v, err=%v", step, a.reloads, status, err)
+		}
+		path := filepath.Join(c.Directory, "ghostty-theme.conf")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if step.applied == engine.Auto {
+			if !strings.Contains(string(data), "light:TokyoNight Day") || !strings.Contains(string(data), "dark:TokyoNight Moon") {
+				t.Fatalf("missing native themes: %s", data)
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if autoFile != nil && !os.SameFile(autoFile, info) {
+				t.Fatal("system change rewrote the native selection")
+			}
+			autoFile = info
+		} else {
+			autoFile = nil
+			expected := `theme = "TokyoNight Moon"`
+			if step.applied == engine.Light {
+				expected = `theme = "TokyoNight Day"`
+			}
+			if !strings.Contains(string(data), expected) || strings.Contains(string(data), "cursor-color") {
+				t.Fatalf("manual palette: %s", data)
+			}
+		}
+	}
+	for _, name := range []string{"ghostty-light.conf", "ghostty-dark.conf"} {
+		if _, err := os.Stat(filepath.Join(c.Directory, name)); !os.IsNotExist(err) {
+			t.Fatalf("unnecessary palette file %s: %v", name, err)
+		}
+	}
+}
+
 func TestGhosttyLateReplyCannotLeaveOrphan(t *testing.T) {
 	c := engine.Config{Directory: t.TempDir()}
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Millisecond)
@@ -151,7 +223,7 @@ func TestTmuxIntegration(t *testing.T) {
 	var previous engine.AdapterState
 	apply := func(mode engine.Mode) {
 		t.Helper()
-		artifacts, err := adapter.Render(c, mode)
+		artifacts, err := adapter.Render(c, engine.RenderRequest{Mode: mode, Preference: mode})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -204,14 +276,17 @@ func TestLinuxGhosttyReloadThroughSystemd(t *testing.T) {
 		}
 		return show, nil
 	}
-	r := engine.ApplyRequest{Mode: engine.Dark}
-	for _, unit := range []string{"", "ActiveState=inactive\nMainPID=0\nCanReload=yes\n", "ActiveState=active\nMainPID=42\nCanReload=no\n"} {
-		show = unit
-		state, err := applyLinuxGhostty(r, systemctl)
-		if err != nil || state.State != "published" || reloads != 0 {
-			t.Fatalf("reload without a reloadable unit %q: %+v, %v", unit, state, err)
+	for _, preference := range []engine.Mode{engine.Dark, engine.Auto} {
+		r := engine.ApplyRequest{Mode: engine.Dark, Preference: preference}
+		for _, unit := range []string{"", "ActiveState=inactive\nMainPID=0\nCanReload=yes\n", "ActiveState=active\nMainPID=42\nCanReload=no\n"} {
+			show = unit
+			state, err := applyLinuxGhostty(r, systemctl)
+			if err != nil || state.State != "published" || state.Mode != preference || reloads != 0 {
+				t.Fatalf("%s without a reloadable unit %q: %+v, reloads=%d, err=%v", preference, unit, state, reloads, err)
+			}
 		}
 	}
+	r := engine.ApplyRequest{Mode: engine.Dark, Preference: engine.Dark}
 	show = "ActiveState=active\nMainPID=42\nCanReload=yes\n"
 	state, err := applyLinuxGhostty(r, systemctl)
 	if err != nil || state.State != "reload requested" || state.Identity != "42" || reloads != 1 {
@@ -222,7 +297,29 @@ func TestLinuxGhosttyReloadThroughSystemd(t *testing.T) {
 		t.Fatal("healthy instance reloaded again")
 	}
 	show = "ActiveState=active\nMainPID=43\nCanReload=yes\n"
-	if _, err := applyLinuxGhostty(r, systemctl); err != nil || reloads != 2 {
+	state, err = applyLinuxGhostty(r, systemctl)
+	if err != nil || reloads != 2 {
 		t.Fatal("restarted instance not reloaded")
+	}
+	r.Previous = state
+	for _, step := range []struct {
+		mode, preference engine.Mode
+		reloads          int
+	}{
+		{engine.Light, engine.Auto, 3},
+		{engine.Dark, engine.Auto, 3},
+		{engine.Light, engine.Auto, 3},
+		{engine.Light, engine.Light, 4},
+		{engine.Light, engine.Auto, 5},
+		{engine.Dark, engine.Auto, 5},
+		{engine.Dark, engine.Dark, 6},
+		{engine.Dark, engine.Dark, 6},
+	} {
+		r.Mode, r.Preference = step.mode, step.preference
+		state, err := applyLinuxGhostty(r, systemctl)
+		if err != nil || state.State != "reload requested" || state.Mode != step.preference || state.Identity != "43" || reloads != step.reloads {
+			t.Fatalf("%+v: state=%+v, reloads=%d, err=%v", step, state, reloads, err)
+		}
+		r.Previous = state
 	}
 }

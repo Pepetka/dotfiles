@@ -99,7 +99,7 @@ func (e *Engine) Reconcile(ctx context.Context, preference Mode, system *System,
 	}
 	var ready []pending
 	for _, adapter := range e.Adapters {
-		artifacts, renderErr := adapter.Render(e.Config, status.Mode)
+		artifacts, renderErr := adapter.Render(e.Config, RenderRequest{Mode: status.Mode, Preference: preference})
 		changed := false
 		if renderErr == nil {
 			for _, artifact := range artifacts {
@@ -123,7 +123,7 @@ func (e *Engine) Reconcile(ctx context.Context, preference Mode, system *System,
 		}
 	}
 	for _, item := range ready {
-		state, applyErr := item.adapter.Apply(ctx, e.Config, ApplyRequest{Mode: status.Mode, Previous: previous.Adapters[item.adapter.Name()], Changed: item.changed, Force: force})
+		state, applyErr := item.adapter.Apply(ctx, e.Config, ApplyRequest{Mode: status.Mode, Preference: preference, Previous: previous.Adapters[item.adapter.Name()], Changed: item.changed, Force: force})
 		if applyErr != nil {
 			state.State, state.Error = "error", applyErr.Error()
 			failures = append(failures, fmt.Errorf("%s: %w", item.adapter.Name(), applyErr))

@@ -122,10 +122,11 @@ shows service starts. Without a systemd user manager (WSL, containers) use `--ma
 Implement `engine.Adapter` and register it in `internal/adapters/registry.go`:
 
 - `Name` supplies the diagnostic key.
-- `Render(Config, Mode)` returns generated files and has no side effects.
+- `Render(Config, RenderRequest)` returns generated files and has no side effects.
 - `Apply(context.Context, Config, ApplyRequest)` applies the desired mode and
   returns an independent state/error. Requests include previous state, content
   changes and explicit force so reload failures and application restarts recover.
+  Render and apply requests include both the effective mode and the user's preference.
 
 Application-specific behavior belongs in the adapter, not the core's event loop.
 Platform-specific actions stay in platform helpers. Source palette assets are
@@ -133,6 +134,14 @@ never rewritten when changing the mode.
 
 ## Live updates
 
+- Ghostty selects the built-in `TokyoNight Day` / `TokyoNight Moon` themes by name.
+  In `auto`, Ghostty tracks the system natively; appearance changes do not rewrite
+  its configuration or request a reload. Manual `light`/`dark` select one fixed
+  theme. Switching between policies, changed theme selections,
+  application restarts and explicit `sync` request a reload. Ghostty's adapter mode
+  reports `auto` for native selection; other adapters report the effective mode.
+  Native selection follows the desktop directly, including when a custom backend
+  or a backend failure gives the other adapters a different effective mode.
 - Ghostty on Linux reloads through its own systemd unit
   (`systemctl --user reload app-com.mitchellh.ghostty.service`, i.e. SIGUSR2) when
   that unit is active and reloadable. Ghostty started outside the unit keeps the

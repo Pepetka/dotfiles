@@ -13,8 +13,8 @@ import (
 type Tmux struct{}
 
 func (Tmux) Name() string { return "tmux" }
-func (Tmux) Render(c engine.Config, mode engine.Mode) ([]engine.Artifact, error) {
-	return palette(c, mode, "tmux", "conf", "tmux-theme.conf")
+func (Tmux) Render(c engine.Config, r engine.RenderRequest) ([]engine.Artifact, error) {
+	return palette(c, r.Mode, "tmux", "conf", "tmux-theme.conf")
 }
 
 func (Tmux) Apply(ctx context.Context, c engine.Config, r engine.ApplyRequest) (engine.AdapterState, error) {

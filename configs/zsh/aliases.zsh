@@ -29,6 +29,7 @@ fi
 # Git
 alias gs="git status"
 alias ga="git add"
+alias gas="git add ./src"
 alias gaa="git add ."
 alias gpl="git pull"
 alias gpld="git pull origin develop"

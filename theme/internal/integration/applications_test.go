@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -62,6 +63,20 @@ func TestApplications(t *testing.T) {
 	}
 	write(settings, data, 0600)
 	t.Setenv("XDG_CONFIG_HOME", configRoot)
+	systemctlLog := filepath.Join(temporary, "systemctl.log")
+	tools := filepath.Join(temporary, "bin")
+	write(filepath.Join(tools, "systemctl"), []byte(`#!/bin/sh
+printf '%s\n' "$*" >> "$THEME_TEST_SYSTEMCTL_LOG"
+case "$*" in
+  '--user show --property=ActiveState,MainPID,CanReload app-com.mitchellh.ghostty.service')
+    printf 'ActiveState=active\nMainPID=42\nCanReload=yes\n'
+    ;;
+  '--user reload app-com.mitchellh.ghostty.service') ;;
+  *) exit 1 ;;
+esac
+`), 0700)
+	t.Setenv("THEME_TEST_SYSTEMCTL_LOG", systemctlLog)
+	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 	run := func(name string, args ...string) (string, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -114,6 +129,16 @@ func TestApplications(t *testing.T) {
 			}
 		}
 	}
+	requireRun(binary, "auto", "--config", settings)
+	if ghostty, err := exec.LookPath("ghostty"); err == nil {
+		content := requireRun(ghostty, "+show-config")
+		for _, expected := range []string{"light:TokyoNight Day", "dark:TokyoNight Moon"} {
+			if !strings.Contains(content, expected) {
+				t.Fatalf("Ghostty missing native selection %q: %s", expected, content)
+			}
+		}
+		requireRun(ghostty, "+validate-config", "--config-file="+filepath.Join(configRoot, "ghostty/config"))
+	}
 	write(filepath.Join(directory, "preference"), []byte("broken\n"), 0600)
 	output, err := run(binary, "status", "--config", settings)
 	if err == nil {
@@ -130,5 +155,15 @@ func TestApplications(t *testing.T) {
 	retained, err := os.ReadFile(filepath.Join(directory, "preference"))
 	if err != nil || string(retained) != "broken\n" {
 		t.Fatal("corrupt preference was overwritten")
+	}
+	if runtime.GOOS == "linux" {
+		calls, err := os.ReadFile(systemctlLog)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := strings.Repeat("--user show --property=ActiveState,MainPID,CanReload app-com.mitchellh.ghostty.service\n--user reload app-com.mitchellh.ghostty.service\n", 3)
+		if string(calls) != expected {
+			t.Fatalf("unexpected systemctl calls:\n%s", calls)
+		}
 	}
 }

@@ -16,7 +16,11 @@ import (
 type Ghostty struct{}
 
 func (Ghostty) Name() string { return "ghostty" }
-func (Ghostty) Render(c engine.Config, mode engine.Mode) ([]engine.Artifact, error) {
+func (Ghostty) Render(c engine.Config, r engine.RenderRequest) ([]engine.Artifact, error) {
+	mode := r.Mode
+	if r.Preference == engine.Auto {
+		mode = engine.Auto
+	}
 	data, err := os.ReadFile(c.Resource("ghostty", "theme-"+string(mode)+".conf"))
 	if err != nil {
 		return nil, err
@@ -88,10 +92,10 @@ func (Ghostty) Apply(ctx context.Context, c engine.Config, r engine.ApplyRequest
 		})
 	}
 	if runtime.GOOS != "darwin" {
-		return engine.AdapterState{State: "published", Mode: r.Mode}, nil
+		return engine.AdapterState{State: "published", Mode: ghosttyMode(r)}, nil
 	}
 	if c.PlatformHelper == "" {
-		return engine.AdapterState{State: "published", Mode: r.Mode}, nil
+		return engine.AdapterState{State: "published", Mode: ghosttyMode(r)}, nil
 	}
 	executable := filepath.Join(c.PlatformHelper, "Contents", "MacOS", "theme-macos")
 	output, err := engine.Run(ctx, executable, "ghostty-state")
@@ -102,11 +106,19 @@ func (Ghostty) Apply(ctx context.Context, c engine.Config, r engine.ApplyRequest
 	return applyGhostty(r, identity, func() (string, error) { return GhosttyRequest(ctx, c, "ghostty-reload") })
 }
 
+func ghosttyMode(r engine.ApplyRequest) engine.Mode {
+	if r.Preference == engine.Auto {
+		return engine.Auto
+	}
+	return r.Mode
+}
+
 func applyGhostty(r engine.ApplyRequest, identity string, reload func() (string, error)) (engine.AdapterState, error) {
+	mode := ghosttyMode(r)
 	if identity == "" {
 		return engine.AdapterState{State: "not running"}, nil
 	}
-	if r.Force || r.Changed || r.Previous.State != "reload requested" || r.Previous.Mode != r.Mode || r.Previous.Identity != identity {
+	if r.Force || r.Changed || r.Previous.State != "reload requested" || r.Previous.Mode != mode || r.Previous.Identity != identity {
 		state, err := reload()
 		if err != nil {
 			return engine.AdapterState{}, err
@@ -118,7 +130,7 @@ func applyGhostty(r engine.ApplyRequest, identity string, reload func() (string,
 			return engine.AdapterState{}, fmt.Errorf("unexpected Ghostty reply %q", state)
 		}
 	}
-	return engine.AdapterState{State: "reload requested", Mode: r.Mode, Identity: identity}, nil
+	return engine.AdapterState{State: "reload requested", Mode: mode, Identity: identity}, nil
 }
 
 const ghosttyUnit = "app-com.mitchellh.ghostty.service"
@@ -135,7 +147,7 @@ func applyLinuxGhostty(r engine.ApplyRequest, systemctl func(...string) (string,
 		}
 	}
 	if err != nil || properties["ActiveState"] != "active" || properties["CanReload"] != "yes" || properties["MainPID"] == "0" {
-		return engine.AdapterState{State: "published", Mode: r.Mode}, nil
+		return engine.AdapterState{State: "published", Mode: ghosttyMode(r)}, nil
 	}
 	return applyGhostty(r, properties["MainPID"], func() (string, error) {
 		if output, err := systemctl("reload", ghosttyUnit); err != nil {

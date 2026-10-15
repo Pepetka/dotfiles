@@ -31,8 +31,8 @@ type fakeAdapter struct {
 }
 
 func (a *fakeAdapter) Name() string { return a.name }
-func (a *fakeAdapter) Render(_ Config, mode Mode) ([]Artifact, error) {
-	return []Artifact{{Name: a.name + ".conf", Data: []byte(mode)}}, a.renderErr
+func (a *fakeAdapter) Render(_ Config, r RenderRequest) ([]Artifact, error) {
+	return []Artifact{{Name: a.name + ".conf", Data: []byte(r.Mode)}}, a.renderErr
 }
 
 func (a *fakeAdapter) Apply(_ context.Context, _ Config, r ApplyRequest) (AdapterState, error) {
@@ -334,8 +334,8 @@ type countingAdapter struct {
 	fail    atomic.Bool
 }
 
-func (*countingAdapter) Name() string                            { return "counting" }
-func (*countingAdapter) Render(Config, Mode) ([]Artifact, error) { return nil, nil }
+func (*countingAdapter) Name() string                                     { return "counting" }
+func (*countingAdapter) Render(Config, RenderRequest) ([]Artifact, error) { return nil, nil }
 func (a *countingAdapter) Apply(context.Context, Config, ApplyRequest) (AdapterState, error) {
 	a.applies.Add(1)
 	if a.fail.Load() {

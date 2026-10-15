@@ -77,18 +77,24 @@ type Status struct {
 	Adapters     map[string]AdapterState `json:"adapters"`
 }
 
+type RenderRequest struct {
+	Mode       Mode
+	Preference Mode
+}
+
 type ApplyRequest struct {
-	Mode     Mode
-	Previous AdapterState
-	Changed  bool
-	Force    bool
+	Mode       Mode
+	Preference Mode
+	Previous   AdapterState
+	Changed    bool
+	Force      bool
 }
 
 // Render has no side effects. The engine owns locking and atomic publication;
 // Apply owns application-specific reloads and reports errors independently.
 type Adapter interface {
 	Name() string
-	Render(Config, Mode) ([]Artifact, error)
+	Render(Config, RenderRequest) ([]Artifact, error)
 	Apply(context.Context, Config, ApplyRequest) (AdapterState, error)
 }
 
