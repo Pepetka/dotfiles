@@ -83,8 +83,11 @@ func TestApplications(t *testing.T) {
 		requireRun(binary, variant.mode, "--config", settings)
 		if ghostty, err := exec.LookPath("ghostty"); err == nil {
 			content := requireRun(ghostty, "+show-config")
-			label := map[string]string{"moon": "Moon", "day": "Day"}[variant.style]
-			for _, expected := range []string{"background = " + variant.background + "\n", "theme = TokyoNight " + label + "\n"} {
+			cursor := "#c8d3f5"
+			if variant.mode == "light" {
+				cursor = "#3760bf"
+			}
+			for _, expected := range []string{"background = " + variant.background + "\n", "cursor-color = " + cursor + "\n"} {
 				if !strings.Contains(content, expected) {
 					t.Fatalf("Ghostty missing %q", expected)
 				}

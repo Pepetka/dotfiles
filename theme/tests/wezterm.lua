@@ -26,7 +26,7 @@ assert(config.color_scheme == "tokyonight_moon" and config.automatically_reload_
 publish("day")
 bridge(wezterm, config)
 assert(config.color_scheme == "tokyonight_day")
-assert(config.colors.cursor_bg == "#6172b0" and config.colors.cursor_fg == "#e1e2e7")
+assert(config.colors.cursor_bg == "#3760bf" and config.colors.cursor_fg == "#e1e2e7")
 assert(config.colors.cursor_border == config.colors.cursor_bg)
 publish("moon")
 bridge(wezterm, config)

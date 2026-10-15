@@ -16,9 +16,9 @@ return function(wezterm, config)
 	-- Keep the Day cursor visible, including applications using a thin bar.
 	if config.color_scheme == "tokyonight_day" then
 		config.colors = {
-			cursor_bg = "#6172b0",
+			cursor_bg = "#3760bf",
 			cursor_fg = "#e1e2e7",
-			cursor_border = "#6172b0",
+			cursor_border = "#3760bf",
 		}
 	else
 		config.colors = nil

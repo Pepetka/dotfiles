@@ -4,16 +4,16 @@ alias cls="clear"
 alias v="nvim"
 
 # Configs
-alias zsho='"${EDITOR:-vi}" "${ZDOTDIR:-$HOME}/.zshrc"'
+alias zsho='$EDITOR "${ZDOTDIR:-$HOME}/.zshrc"'
 alias zshr='source "${ZDOTDIR:-$HOME}/.zshrc"'
-alias ohmyzsh='"${EDITOR:-vi}" "${ZSH:-$HOME/.oh-my-zsh}"'
-alias alacritty.conf='"${EDITOR:-vi}" "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"'
-alias wezterm.conf='"${EDITOR:-vi}" "${WEZTERM_CONFIG_FILE:-$HOME/.wezterm.lua}"'
-alias ghostty.conf='"${EDITOR:-vi}" "${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"'
-alias tmux.conf='"${EDITOR:-vi}" ~/.tmux.conf'
-alias aliases='"${EDITOR:-vi}" "$DOTFILES/configs/zsh/aliases.zsh"'
-alias zshlocal='"${EDITOR:-vi}" "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh"'
-alias zshsecrets='"${EDITOR:-vi}" "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/secrets.zsh"'
+alias ohmyzsh='$EDITOR "${ZSH:-$HOME/.oh-my-zsh}"'
+alias alacritty.conf='$EDITOR "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"'
+alias wezterm.conf='$EDITOR "${WEZTERM_CONFIG_FILE:-$HOME/.wezterm.lua}"'
+alias ghostty.conf='$EDITOR "${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"'
+alias tmux.conf='$EDITOR ~/.tmux.conf'
+alias aliases='$EDITOR "$DOTFILES/configs/zsh/aliases.zsh"'
+alias zshlocal='$EDITOR "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh"'
+alias zshsecrets='$EDITOR "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/secrets.zsh"'
 
 unalias theme 2>/dev/null
 theme() {
@@ -21,7 +21,7 @@ theme() {
 }
 
 # Listing: keep the system ls when eza is not installed.
-if (( $+commands[eza] )); then
+if (($+commands[eza])); then
   alias ls="eza --tree --level=1 --icons=always --no-time --no-user --no-permissions -a"
   alias ls2="eza --tree --level=2 --icons=always --no-time --no-user --no-permissions -a"
 fi
